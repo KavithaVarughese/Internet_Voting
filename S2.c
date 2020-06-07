@@ -11,6 +11,7 @@
 
 int main(){
 
+    //____________________________/ SOCKET CREATION FOR S1 ______________________________/
 	int sockfd, ret;
 	 struct sockaddr_in serverAddr;
 
@@ -28,12 +29,17 @@ int main(){
 		exit(1);
 	}
 	printf("[+]Server Socket is created.\n");
+    //________________________________________________________________________________________
 
+    //____________________________/ CONFIGURING SOCKET ______________________________________
 	memset(&serverAddr, '\0', sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(PORT);
 	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    //________________________________________________________________________________________
 
+    
+    //____________________________/ BIND AND LISTEN ________________________________________
 	ret = bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
 	if(ret < 0){
 		printf("[-]Error in binding.\n");
@@ -46,15 +52,18 @@ int main(){
 	}else{
 		printf("[-]Error in binding.\n");
 	}
+	//______________________________________________________________________________________/
 
-
+    //____________________________/ START FROM THIS POINT __________________________________
 	while(1){
+
 		newSocket = accept(sockfd, (struct sockaddr*)&newAddr, &addr_size);
 		if(newSocket < 0){
 			exit(1);
 		}
 		printf("Connection accepted from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
+        //____ MAKE CHANGES FROM HERE ______________
 		if((childpid = fork()) == 0){
 			close(sockfd);
 

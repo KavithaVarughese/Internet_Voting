@@ -12,9 +12,9 @@
 
 int main(){
 
-	/////// CREATION OF PERMANENT SOCKET FOR S2/////////////////////////////////////////////
+	//______/ CREATION OF PERMANENT SOCKET FOR S2____________________________________________/
 
-	///////////////////////////// SOCKET CREATION //////////////////////////////////////////
+	//____________________________/ SOCKET CREATION __________________________________________
 	int S2Socket, ret2;
 	struct sockaddr_in server2Addr;
 	char buffer2[1024];
@@ -25,29 +25,29 @@ int main(){
 		exit(1);
 	}
 	printf("[+]S2 Socket is created.\n");
-	////////////////////////////////////////////////////////////////////////////////////////
+	//________________________________________________________________________________________
 
-	///////////////////////////// CONFIGURING SOCKET //////////////////////////////////////
+	//____________________________/ CONFIGURING SOCKET ______________________________________
 	memset(&server2Addr, '\0', sizeof(server2Addr));
 	server2Addr.sin_family = AF_INET;
 	server2Addr.sin_port = htons(PORT_S2);
 	server2Addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	////////////////////////////////////////////////////////////////////////////////////////
+	//________________________________________________________________________________________
 
 
-	///////////////////////////// CONNECTINGG ..... ////////////////////////////////////////
+	//____________________________/ CONNECTINGG ..... ________________________________________
 	ret2 = connect(S2Socket, (struct sockaddr*)&server2Addr, sizeof(server2Addr));
 	if(ret2 < 0){
 		printf("[-]Error in connection.\n");
 		exit(1);
 	}
 	printf("[+]Connected to S2.\n");
-	///////////////////////////////////////////////////////////////////////////////////////
+	//______________________________________________________________________________________/
 
-	/////////////////////// END OF CREATION FOR S2 ////////////////////
+	//______________________/ END OF CREATION FOR S2 ____________________
 
 
-	///////////////////////////// SOCKET CREATION FOR VOTER ///////////////////////////////
+	//____________________________/ SOCKET CREATION FOR VOTER ______________________________/
 	int sockfd, ret;
 	struct sockaddr_in serverAddr;
 
@@ -65,17 +65,17 @@ int main(){
 		exit(1);
 	}
 	printf("[+]Server Socket is created.\n");
-	///////////////////////////////////////////////////////////////////////////////////////
+	//______________________________________________________________________________________/
 
-	///////////////////////////// CONFIGURING SOCKET //////////////////////////////////////
+	//____________________________/ CONFIGURING SOCKET ______________________________________
 	memset(&serverAddr, '\0', sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(PORT);
 	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	///////////////////////////////////////////////////////////////////////////////////////
+	//______________________________________________________________________________________/
 
 
-	///////////////////////////// BIND AND LISTEN ////////////////////////////////////////
+	//____________________________/ BIND AND LISTEN ________________________________________
 	ret = bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
 	if(ret < 0){
 		printf("[-]Error in binding.\n");
@@ -88,46 +88,46 @@ int main(){
 	}else{
 		printf("[-]Error in binding.\n");
 	}
-	///////////////////////////////////////////////////////////////////////////////////////
+	//______________________________________________________________________________________/
 
 
-	///////////////////////////// START FROM THIS POINT //////////////////////////////////
+	//____________________________/ START FROM THIS POINT __________________________________
 	while(1){
 
-		///////////////////////////// SOCKET ACCEPTANCE FROM VOTER ///////////////////////
+		//____________________________/ SOCKET ACCEPTANCE FROM VOTER ______________________/
 		newSocket = accept(sockfd, (struct sockaddr*)&newAddr, &addr_size);
 
 
-		///////////////////////////// INCASE OF FAILED ACCEPTANCE ////////////////////////
+		//____________________________/ INCASE OF FAILED ACCEPTANCE ________________________
 		if(newSocket < 0)
 		{
 			exit(1);
 		}
 
 
-		///////////////////////////// SOCKET ACCEPTED ///////////////////////////////////
+		//____________________________/ SOCKET ACCEPTED __________________________________/
 		printf("Connection accepted from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
 
-		///////////////////////////// CHILD PROCESS FOR EACH VOTER //////////////////////
-		////////// KEEP EVERY ACTIVTTY OF EACH VOTER WITHIN THIS IF BLOCK ///////////////
+		//____________________________/ CHILD PROCESS FOR EACH VOTER ______________________
+		//__________ KEEP EVERY ACTIVTTY OF EACH VOTER WITHIN THIS IF BLOCK ______________/
 		if((childpid = fork()) == 0)
 		{
 
-			/////////////// KEEPING CORRESPONDING SOCKET FOR VOTER OPEN /////////////////
+			//______________/ KEEPING CORRESPONDING SOCKET FOR VOTER OPEN ________________/
 			while(1)
 			{
-				/////////////////// RECIEVING MESSAGE FROM VOTER ////////////////////////
+				//__________________/ RECIEVING MESSAGE FROM VOTER ________________________
 				recv(newSocket, buffer, 1024, 0);
 
-				////////////////// ACKNOWLEDGMENT TO CLOSE SOCKET //////////////////////
+				//__________________ ACKNOWLEDGMENT TO CLOSE SOCKET ______________________
 				if(strcmp(buffer, ":exit") == 0)
 				{
 					printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 					break;
 				}
 				
-				//////////////////////// ACTIVITY FOR MESSAGE //////////////////////////
+				//________________________ ACTIVITY FOR MESSAGE __________________________
 				else{
 					printf("Client: %s\n", buffer);
 					send(newSocket, buffer, strlen(buffer), 0);
@@ -135,22 +135,22 @@ int main(){
 				}
 			}
 
-			//////////////////// CONNECTING TO SERVER 2 ////////////////////////////
+			//____________________ CONNECTING TO SERVER 2 ____________________________
 
 	
 
 
-			//////////////////// COMMUNICATING WITH S2  ///////////////////////////
+			//____________________ COMMUNICATING WITH S2  __________________________/
 			while(1)
 			{
 
-			//////////////////// MESSAGE SENT BY S1 //////////////////////////////////////
+			//____________________ MESSAGE SENT BY S1 ______________________________________
 				printf("S1: \t");
 				scanf("%s", &buffer2[0]);
 				send(S2Socket, buffer2, strlen(buffer2), 0);
 
 
-				// S1 ENDING CONNECTION BY COMPARING STRING THAT THE S1 SENT TO S2 ////
+				//__ S1 ENDING CONNECTION BY COMPARING STRING THAT THE S1 SENT TO S2 ____
 				if(strcmp(buffer2, ":exit") == 0)
 				{
 					close(S2Socket);
@@ -159,7 +159,7 @@ int main(){
 				}
 
 
-				//////////////////// RECEIVING A MESSAGE FROM SERVER 1 /////////////////////////
+				//____________________ RECEIVING A MESSAGE FROM SERVER 1 ________________________/
 				if(recv(S2Socket, buffer2, 1024, 0) < 0)
 				{
 					printf("[-]Error in receiving data.\n");
