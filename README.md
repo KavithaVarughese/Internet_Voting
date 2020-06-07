@@ -3,17 +3,17 @@
 # UPDATES : 
   Basic Skeletal code 
   
-  Main files are 
-    webserver.c
-    S1.c
-    S2.c
+  Main files are <br />
+    webserver.c <br />
+    S1.c <br />
+    S2.c 
     
-  Please compile using the following
-    make webserver
-    make S1
-    make S2
+  Please compile using the following <br />
+    make webserver <br />
+    make S1 <br />
+    make S2 <br />
     
-  Run the program using
-    ./webserver
-    ./S1
+  Run the program using <br />
+    ./webserver <br />
+    ./S1 <br />
     ./S2
