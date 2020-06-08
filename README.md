@@ -4,16 +4,16 @@
   Basic Skeletal code 
   
   Main files are <br />
-    webserver.c <br />
-    S1.c <br />
-    S2.c 
+    Webserver.java <br />
+    S1.java <br />
+    S2.java
     
   Please compile using the following <br />
-    make webserver <br />
-    make S1 <br />
-    make S2 <br />
+    javac Webserver.java <br />
+    javac S1.java <br />
+    javac S2.java <br />
     
   Run the program using <br />
-    ./webserver <br />
-    ./S1 <br />
-    ./S2
+    java Webserver <br />
+    java S1 <br />
+    java S2
