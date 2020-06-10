@@ -1,6 +1,5 @@
-// Java implementation of Server side 
-// It contains two classes : Server and ClientHandler 
-// Save file as Server.java 
+// Java implementation of Server 2
+// Saved file as Server2.class
 
 import java.io.*; 
 import java.text.*; 
