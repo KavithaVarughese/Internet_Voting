@@ -61,6 +61,8 @@ class VoterHandler extends Thread
 	final Socket s;
 	private SecretKey SharedKey;		//datatype needs to be created (for KAVITHA)
 	
+	private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
+	private int N2 = 1234567890;
 
 	// Constructor 
 	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos) 
@@ -104,28 +106,42 @@ class VoterHandler extends Thread
 				//packet 3 receiving code
 
 				String Msg = decryptAES(received, SharedKey);
+				String[] msgList = Msg.split("\\s+");			//splits to a list of rsa encrypted packet, uid, dig sig and N2-1
+
+				int uid = Integer.valueOf(msgList.get(1));
+				int N2_mod = Integer.valueOf(msgList.get(3));
+
+				if (voterLst.contains(uid) || (N2_mod != N2-1)){
+					System.out.println("Voter already voted");
+					System.out.println("Refusing this connection."); 
+					this.s.close(); 
+					System.out.println("Connection closed"); 
+					break; 
+				}
+
+				else{
+						//packet goes to S2.
 				
-
-
 
 
 
 
 				//------------------------------------------------------------------------------
-				
-				//acknowledgemnt to close socket
-				if(received.equals("Exit")) 
-				{ 
-					System.out.println("Client " + this.s + " sends exit..."); 
-					System.out.println("Closing this connection."); 
-					this.s.close(); 
-					System.out.println("Connection closed"); 
-					break; 
-				} 
-				
-				// write on output stream
-				// response to the voter
-				dos.writeUTF("Response from S1");
+					
+					//acknowledgemnt to close socket
+					if(received.equals("Exit")) 
+					{ 
+						System.out.println("Client " + this.s + " sends exit..."); 
+						System.out.println("Closing this connection."); 
+						this.s.close(); 
+						System.out.println("Connection closed"); 
+						break; 
+					} 
+					
+					// write on output stream
+					// response to the voter
+					dos.writeUTF("Response from S1");
+				}
 
 			} catch (IOException e) { 
 				e.printStackTrace(); 
