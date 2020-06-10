@@ -58,7 +58,8 @@ class VoterHandler extends Thread
 { 
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
-	final Socket s; 
+	final Socket s;
+	private SecretKey SharedKey;		//datatype needs to be created (for KAVITHA)
 	
 
 	// Constructor 
@@ -67,7 +68,19 @@ class VoterHandler extends Thread
 		this.s = s; 
 		this.dis = dis; 
 		this.dos = dos; 
-	} 
+	}
+
+	public static String decryptAES(String encryptedText, SecretKey secretKey)
+			throws Exception {
+		Base64.Decoder decoder = Base64.getDecoder();
+		byte[] encryptedTextByte = decoder.decode(encryptedText);
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+		String decryptedText = new String(decryptedByte);
+		return decryptedText;
+	}
+
+
 
 	@Override
 	public void run() 
@@ -86,6 +99,19 @@ class VoterHandler extends Thread
 				
 				// receive the response from voter
 				received = dis.readUTF(); 
+
+				//------------------------------------------------------------------------------
+				//packet 3 receiving code
+
+				String Msg = decryptAES(received, SharedKey);
+				
+
+
+
+
+
+
+				//------------------------------------------------------------------------------
 				
 				//acknowledgemnt to close socket
 				if(received.equals("Exit")) 

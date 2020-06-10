@@ -24,6 +24,7 @@ public class Webserver
 	private int UID = 9012380912839;
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
 	private int N2 = 1234567890;
+	private SecretKey SharedKey;				//datatype to be created (for KAVITHA)
 
 	public static void main(String[] args) throws IOException 
 	{ 
@@ -83,7 +84,7 @@ public class Webserver
 		String Msg = Integer.toString(CID) + " " + Integer.toString(secret);
 		Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + Integer.toString(UID);
 		N2 = Integer.toString(N2 - 1);
-		Msg = encryptAES(Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2));
+		Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2), SharedKey);
 		return Msg;
 	}
 
