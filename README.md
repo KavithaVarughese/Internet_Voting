@@ -17,3 +17,6 @@
     java Webserver <br />
     java S1 <br />
     java S2
+
+
+S2 -> S1 -> Webserver //order to run the files
