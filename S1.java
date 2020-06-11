@@ -6,7 +6,20 @@ import java.io.*;
 import java.text.*; 
 import java.util.*; 
 import java.net.*; 
+import java.security.*;
+import javax.crypto.*;
+import java.lang.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 // S1 class 
 public class S1
 { 
@@ -76,19 +89,98 @@ class VoterHandler extends Thread
 		String received; 
 		String toreturn; 
 		
+		String accepted = "accepted";
+		String rejected = "rejected";
+		Integer serverKey;
+		
 		//All communication with voter in this block
 		while (true) 
 		{ 
 			try { 
 
 				// Send something to the voter
-				dos.writeUTF("Sending some information\n"+ 
-							"Type Exit to terminate connection."); 
+				//dos.writeUTF("Sending some information\n"+ 
+							//"Type Exit to terminate connection."); 
+				//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
+				SecureRandom random = new SecureRandom();
+				Base64.Encoder enc = Base64.getEncoder();
+				byte[] salt = new byte[16];
+				random.nextBytes(salt);
+
+				String salt1 = enc.encodeToString(salt);
+				// Sending the salt
+				//System.out.println(salt1);
+				String message = "Sending Salt";
+				dos.writeUTF(message);
+				dos.flush();
+				dos.writeUTF(salt1);
+				dos.flush();
+				final String pass = "adminroot";
+				//String salt2 = dis.readUTF();
+				//byte[] salt2 = salt1.getBytes();
+				String hp;
+				try{
+				KeySpec spec = new PBEKeySpec(pass.toCharArray(),salt,65536, 128);
+				SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+				byte hash[] = f.generateSecret(spec).getEncoded();
 				
-				// receive the response from voter
-				received = dis.readUTF(); 
-				
+				hp = enc.encodeToString(hash);
+				}
+				catch (NoSuchAlgorithmException ex) {
+				      throw new IllegalStateException( ex);
+				    }
+				    catch (InvalidKeySpecException ex) {
+				      throw new IllegalStateException("Invalid SecretKeyFactory", ex);
+				    }
+				//System.out.println(hp);
+				int flag = 0,i=0;
+				while(flag < 3)
+			        {
+					// receive username
+					String Username = dis.readUTF();
+					//System.out.println(Username);
+					//receive hashed password
+					String Pwd = dis.readUTF();
+					//System.out.println(Pwd);
+					
+					if(Username.equals("root") && Pwd.equals(pass))
+					{
+						dos.writeUTF(accepted);
+						dos.flush();
+						flag = 4;
+						
+					}
+					else
+					{
+						dos.writeUTF(rejected);
+						dos.flush();
+						System.out.println("rejected");
+						flag ++;
+					}
+					
+				}
+				//sending an otp
+				if(flag == 4)
+				{
+					//Add the recipients email ID
+					String check = TLSEmail.otp("ritika_b160540cs@nitc.ac.in");
+					//System.out.println("OTP is:" +check);
+					String otp = dis.readUTF();
+					if(otp.equals(check))
+					{
+						dos.writeUTF(accepted);
+						dos.flush();
+						serverKey = DHServer.fetchServerKey(dis,dos);
+						//System.out.println(serverKey);
+					}
+					else
+					{
+						dos.writeUTF(rejected);
+						dos.flush();
+					}
+				}
 				//acknowledgemnt to close socket
+				received = dis.readUTF();
 				if(received.equals("Exit")) 
 				{ 
 					System.out.println("Client " + this.s + " sends exit..."); 
