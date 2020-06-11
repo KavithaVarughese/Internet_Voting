@@ -7,15 +7,15 @@ import java.text.*;
 import java.util.*; 
 import java.net.*; 
 
+
 // S1 class 
 public class S1
 { 
+	
+	
+
 	public static void main(String[] args) throws IOException 
 	{ 
-
-		
-		
-
 		// S1 is listening on port 5056 for voter
 		ServerSocket ss = new ServerSocket(5056); 
 		
@@ -43,7 +43,6 @@ public class S1
 
 				// Invoking the start() method 
 				t.start(); 
-				System.out.println("We are back here???"); 
 				
 			} 
 			catch (Exception e){ 
@@ -55,12 +54,25 @@ public class S1
 } 
 
 // ClientHandler class 
-class VoterHandler extends Thread 
+class VoterHandler extends Thread
 { 
+	//creating voter table in the form of Hashmap and classes
+	public static HashMap<String, VoterInfo> VoterTable = new HashMap<>();
+
+	//creating Candidate table
+	public static HashMap<String, String> CandidateTable = new HashMap<String, String>();
+
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s; 
 	
+	//Candidate Table Creation
+	public void createCandidateTable() {
+		CandidateTable.put("C0", "ahufhuwjekhkjfahsdhaufhiu24hjk");
+		CandidateTable.put("C1", "ent245hjdn7kj2h348jshfkakn5n54");
+		CandidateTable.put("C2", "oi98jhghjg6uaghevhj87435jhk8or");
+		CandidateTable.put("C3", "32j4hhuisucjkhjhds874753lhuh82");
+	}
 
 	// Constructor 
 	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos) 
@@ -75,36 +87,46 @@ class VoterHandler extends Thread
 	{ 
 		String received; 
 		String toreturn; 
-		
+		createCandidateTable();
+
 		//All communication with voter in this block
 		while (true) 
 		{ 
 			try { 
+				// PACKET 1
 
-				// Send something to the voter
-				dos.writeUTF("Sending some information\n"+ 
-							"Type Exit to terminate connection."); 
-				
-				// receive the response from voter
+				// receive the Voter Id
+				// Incorporate with Ritika
+				// Forming Voter Table
 				received = dis.readUTF(); 
 				
-				//acknowledgemnt to close socket
-				if(received.equals("Exit")) 
-				{ 
-					System.out.println("Client " + this.s + " sends exit..."); 
-					System.out.println("Closing this connection."); 
-					this.s.close(); 
-					System.out.println("Connection closed"); 
-					break; 
-				} 
-				
-				// write on output stream
-				// response to the voter
-				dos.writeUTF("Response from S1");
+				if(!VoterTable.containsKey(received))
+				{
+					VoterInfo voter = new VoterInfo(received,5000);
+					VoterTable.put(received, voter);
+				}
 
-			} catch (IOException e) { 
-				e.printStackTrace(); 
-			} 
+				ObjectOutputStream mapdos = new ObjectOutputStream(dos);
+				mapdos.writeObject(CandidateTable);
+				
+				break;
+			// 	//acknowledgemnt to close socket
+			// 	if(received.equals("Exit")) 
+			// 	{ 
+			// 		System.out.println("Client " + this.s + " sends exit..."); 
+			// 		System.out.println("Closing this connection."); 
+			// 		this.s.close(); 
+			// 		System.out.println("Connection closed"); 
+			// 		break; 
+			// 	} 
+				
+			// 	// write on output stream
+			// 	// response to the voter
+			// 	dos.writeUTF("Response from S1");
+
+			 } catch (IOException e) { 
+			 	e.printStackTrace(); 
+			 } 
 		} 
 		
 		try

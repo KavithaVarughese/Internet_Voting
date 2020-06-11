@@ -2,8 +2,9 @@
 // Save file as Client.java 
 
 import java.io.*; 
+import java.text.*; 
+import java.util.*; 
 import java.net.*; 
-import java.util.Scanner; 
 
 // Client class 
 public class Webserver
@@ -28,9 +29,29 @@ public class Webserver
 			// information between client and client handler 
 			while (true) 
 			{ 
-				System.out.println(dis.readUTF()); 
+
+				// Voter starting communication
+				System.out.println("Please enter your VoterID");
+
+				// Voter enters voter Id
 				String tosend = scn.nextLine(); 
+
+				//Voter Id sent to S1 
 				dos.writeUTF(tosend); 
+
+				//recieve the candidate table in the form of a hash
+				// Hash map Form :
+				// C0 : <candidate id>
+				// you can get the unique id of candidate using CandidateTable.get("C0")
+				ObjectInputStream mapdis = new ObjectInputStream(dis);
+				HashMap<String, String> CandidateTable = (HashMap) mapdis.readObject();
+
+				//Print Candidates
+				int i = 1;
+				for (String item: CandidateTable.keySet()) {
+					System.out.println( Integer.toString(i) + " : " + item);
+					i++;
+				}
 				
 				// If client sends exit,close this connection 
 				// and then break from the while loop 
@@ -56,6 +77,3 @@ public class Webserver
 		} 
 	} 
 } 
-
-
-adjfakdfjioawjefknaskjdfadihfioahehakjwnkjsdncoafihdsjkadscndhiofwehkjfnakf
