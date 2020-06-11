@@ -31,12 +31,14 @@ public class Login
          if (cnsl != null) // if console is not null
 	{
 	       int i = 3;
-		while(i>0)
-                {       i = i-1;
+		
 			String salt2 = dis.readUTF();
 			//System.out.println(salt2);
 			String salt1 = dis.readUTF();
 			//System.out.println(salt1);
+			while(i>0)
+                	{  
+			     i = i-1;
 		        name = cnsl.readLine("Enter Name: "); // read line from the user input
 			System.out.println("Enter password");
 			char[] pwd = cnsl.readPassword(); // read password into the char array
