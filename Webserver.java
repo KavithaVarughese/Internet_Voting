@@ -7,6 +7,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.security.*;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -19,11 +20,11 @@ import java.util.Scanner;
 public class Webserver
 { 	
 
-	private int CID = 090983293902;			//to be changed with a method
-	private int secret =097099090808;
-	private int UID = 9012380912839;
+	private static int CID = 213413492;			//to be changed with a method. Can't be static
+	private static int secret = 2132259992;
+	private static int UID = 80912839;
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
-	private int N2 = 1234567890;
+	private static int N2 = 1234567890;
 	private SecretKey SharedKey;				//datatype to be created (for KAVITHA)
 
 	public static void main(String[] args) throws IOException 
@@ -50,7 +51,7 @@ public class Webserver
 				// String tosend = scn.nextLine();
 
 				// code to obtain the message (packet3)------------------------------- 
-
+				System.out.println("Sending Message.");
 				String tosend = makeMsg();
 				dos.writeUTF(tosend);
 
@@ -80,21 +81,39 @@ public class Webserver
 		} 
 	}
 
-	public String makeMsg(){													//mod fn header here if changing the key
+	public static String makeMsg() throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	{													//mod fn header here if changing the key
 		String Msg = Integer.toString(CID) + " " + Integer.toString(secret);
 		Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + Integer.toString(UID);
-		N2 = Integer.toString(N2 - 1);
+		N2 = N2 - 1;
 		Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2), SharedKey);
+		// Msg = Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2);
 		return Msg;
 	}
 
+	
+	public static PublicKey getPublicKeyRSA(String base64PublicKey){
+        PublicKey publicKey = null;
+        try{
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(base64PublicKey.getBytes()));
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            publicKey = keyFactory.generatePublic(keySpec);
+            return publicKey;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return publicKey;
+    }
+
 	public static byte[] encryptRSA(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, getPublicKey(publicKey));
+        cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyRSA(publicKey));
         return cipher.doFinal(data.getBytes());
     }
 
-    public static byte[] digSignatureRSA(String Msg){
+    public static byte[] digSignatureRSA(String Msg) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, SignatureException{
     	KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("DSA");
       
 	    //Initializing the key pair generator
@@ -119,7 +138,7 @@ public class Webserver
 	    //Calculating the signature
 	    byte[] signature = sign.sign();
 
-	    return signature
+	    return signature;
     }
 
     public static String encryptAES(String plainText, SecretKey secretKey)

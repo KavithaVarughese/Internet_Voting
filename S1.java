@@ -59,7 +59,7 @@ class VoterHandler extends Thread
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s;
-	private SecretKey SharedKey;		//datatype needs to be created (for KAVITHA)
+	// private SecretKey SharedKey;		//datatype needs to be created (for KAVITHA)
 	
 	private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
 	private int N2 = 1234567890;
@@ -108,10 +108,10 @@ class VoterHandler extends Thread
 				String Msg = decryptAES(received, SharedKey);
 				String[] msgList = Msg.split("\\s+");			//splits to a list of rsa encrypted packet, uid, dig sig and N2-1
 
-				int uid = Integer.valueOf(msgList.get(1));
-				int N2_mod = Integer.valueOf(msgList.get(3));
+				int UID = Integer.valueOf(msgList[1]);
+				int N2_mod = Integer.valueOf(msgList[3]);
 
-				if (voterLst.contains(uid) || (N2_mod != N2-1)){
+				if (voterLst.contains(UID) || (N2_mod != N2-1)){
 					System.out.println("Voter already voted");
 					System.out.println("Refusing this connection."); 
 					this.s.close(); 
@@ -120,8 +120,17 @@ class VoterHandler extends Thread
 				}
 
 				else{
+
+					voterLst.add(UID);			//adding the new voter to the voter set
+
+					System.out.println("Data from the Voter:");
+					System.out.println(UID);
+					System.out.println(N2_mod);
+					System.out.println(msgList[0]);
+					System.out.println(msgList[2]);
+
 						//packet goes to S2.
-				
+
 
 
 
