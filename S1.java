@@ -6,13 +6,27 @@ import java.io.*;
 import java.text.*; 
 import java.util.*; 
 import java.net.*; 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.*;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
 
 // S1 class 
 public class S1
 { 
 	
-	
+	private long N1 = 5497326541L;
+	private long N2 = 3725678901L;
+	private long N3 = 3724116239L;
 
 	public static void main(String[] args) throws IOException 
 	{ 
@@ -56,23 +70,24 @@ public class S1
 // ClientHandler class 
 class VoterHandler extends Thread
 { 
-	//creating voter table in the form of Hashmap and classes
-	public static HashMap<String, VoterInfo> VoterTable = new HashMap<>();
+	//accessing voter table in the form of Hashmap and classes
+	VoterData temp1 = new VoterData();
+	public HashMap<String, VoterInfo> VoterTable = temp1.getVoterTable();
 
 	//creating Candidate table
-	public static HashMap<String, String> CandidateTable = new HashMap<String, String>();
+	CandidateData temp2 = new CandidateData();
+	public HashMap<String, String> CandidateTable = temp2.getCandidateTable();
+
+	//create empty Voter Check Table
+	public static HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>(); 
+
 
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s; 
-	
-	//Candidate Table Creation
-	public void createCandidateTable() {
-		CandidateTable.put("C0", "ahufhuwjekhkjfahsdhaufhiu24hjk");
-		CandidateTable.put("C1", "ent245hjdn7kj2h348jshfkakn5n54");
-		CandidateTable.put("C2", "oi98jhghjg6uaghevhj87435jhk8or");
-		CandidateTable.put("C3", "32j4hhuisucjkhjhds874753lhuh82");
-	}
+	static Cipher cipher;
+	private SecretKey SharedKey = getSecretKey();
+
 
 	// Constructor 
 	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos) 
@@ -87,23 +102,36 @@ class VoterHandler extends Thread
 	{ 
 		String received; 
 		String toreturn; 
-		createCandidateTable();
 
 		//All communication with voter in this block
-		while (true) 
+		while(true) 
 		{ 
 			try { 
+
+				//get votertable
+
 				// PACKET 1
 
-				// receive the Voter Id
-				// Incorporate with Ritika
-				// Forming Voter Table
+				// receive packet 1
 				received = dis.readUTF(); 
-				
-				if(!VoterTable.containsKey(received))
+				String packet1 = decryptAES(received, SharedKey);
+				String[] msgList = packet1.split("\\s+");
+				String VoterId = msgList[1];
+
+				if(!VoterTable.get(VoterId).getUidAssigned())
 				{
-					VoterInfo voter = new VoterInfo(received,5000);
-					VoterTable.put(received, voter);
+					do
+					{
+						//get random uniqueID
+						String uniqueID = getAlphaNumericString(10);
+						//assign if uniqueID is unique
+						if(!VoterCheckTable.containsKey(uniqueID))
+						{
+							VoterCheck voter = new VoterCheck(VoterId,uniqueID);
+							VoterCheckTable.put(uniqueID, voter);
+							break;
+						}
+					}while(true);
 				}
 
 				ObjectOutputStream mapdos = new ObjectOutputStream(dos);
@@ -126,7 +154,9 @@ class VoterHandler extends Thread
 
 			 } catch (IOException e) { 
 			 	e.printStackTrace(); 
-			 } 
+			 } catch (Exception e){
+				 e.printStackTrace();
+			 }
 		} 
 		
 		try
@@ -186,5 +216,51 @@ class VoterHandler extends Thread
 			e.printStackTrace(); 
 		} 
 
-	} 
+	}
+	
+	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
+	{
+		cipher = Cipher.getInstance("AES");
+		Base64.Decoder decoder = Base64.getDecoder();
+		byte[] encryptedTextByte = decoder.decode(encryptedText);
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+		String decryptedText = new String(decryptedByte);
+		return decryptedText;
+	}
+
+	static String getAlphaNumericString(int n) 
+    { 
+  
+        // chose a Character random from this String 
+        String AlphaNumericString = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                    + "0123456789"
+                                    + "abcdefghijklmnopqrstuvxyz"; 
+  
+        // create StringBuffer size of AlphaNumericString 
+        StringBuilder sb = new StringBuilder(n); 
+  
+        for (int i = 0; i < n; i++) { 
+  
+            // generate a random number between 
+            // 0 to AlphaNumericString variable length 
+            int index 
+                = (int)(AlphaNumericString.length() 
+                        * Math.random()); 
+  
+            // add Character one by one in end of sb 
+            sb.append(AlphaNumericString 
+                          .charAt(index)); 
+        } 
+  
+        return sb.toString(); 
+	}
+	
+	public SecretKey getSecretKey(){
+		String keyStr = "012345678901234567890123456789XY";
+		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
+		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		return secretKey;
+	}
+
 } 

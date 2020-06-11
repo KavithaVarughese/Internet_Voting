@@ -5,16 +5,33 @@ import java.io.*;
 import java.text.*; 
 import java.util.*; 
 import java.net.*; 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.*;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
 // Client class 
 public class Webserver
 { 
+	private static long N1 = 5497326541L;
+	private static long N2 = 3725678901L;
+	static Cipher cipher;
+	private static SecretKey SharedKey = getSecretKey();
+	
 	public static void main(String[] args) throws IOException 
 	{ 
 		try
 		{ 
 			Scanner scn = new Scanner(System.in); 
-			
+		
 			// getting localhost ip 
 			InetAddress ip = InetAddress.getByName("localhost"); 
 	
@@ -30,14 +47,17 @@ public class Webserver
 			while (true) 
 			{ 
 
-				// Voter starting communication
+				// Voter starting communication with packet 1
 				System.out.println("Please enter your VoterID");
 
 				// Voter enters voter Id
-				String tosend = scn.nextLine(); 
+				String VoterID = scn.nextLine();
+
+				String packet1 = getmessagePacket1(VoterID);
+				 
 
 				//Voter Id sent to S1 
-				dos.writeUTF(tosend); 
+				dos.writeUTF(packet1); 
 
 				//recieve the candidate table in the form of a hash
 				// Hash map Form :
@@ -55,13 +75,13 @@ public class Webserver
 				
 				// If client sends exit,close this connection 
 				// and then break from the while loop 
-				if(tosend.equals("Exit")) 
-				{ 
-					System.out.println("Closing this connection : " + s); 
-					s.close(); 
-					System.out.println("Connection closed"); 
-					break; 
-				} 
+				// if(tosend.equals("Exit")) 
+				// { 
+				// 	System.out.println("Closing this connection : " + s); 
+				// 	s.close(); 
+				// 	System.out.println("Connection closed"); 
+				// 	break; 
+				// } 
 				
 				// printing date or time as requested by client 
 				String received = dis.readUTF(); 
@@ -69,11 +89,44 @@ public class Webserver
 			} 
 			
 			// closing resources 
-			scn.close(); 
-			dis.close(); 
-			dos.close(); 
+			// scn.close(); 
+			// dis.close(); 
+			// dos.close(); 
 		}catch(Exception e){ 
 			e.printStackTrace(); 
 		} 
 	} 
+
+	public static String getmessagePacket1(String VoterID) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	{
+		String packet = "";
+		try
+		{
+			String msg = "I_want_to_vote";
+			packet = encryptAES(msg + " " + VoterID + " " + Long.toString(N1), SharedKey);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+
+		return packet;
+	}
+
+	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
+	{
+		cipher = Cipher.getInstance("AES");
+		byte[] plainTextByte = plainText.getBytes();
+		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+		byte[] encryptedByte = cipher.doFinal(plainTextByte);
+		Base64.Encoder encoder = Base64.getEncoder();
+		String encryptedText = encoder.encodeToString(encryptedByte);
+		return encryptedText;
+	}
+
+	public static SecretKey getSecretKey(){
+		String keyStr = "012345678901234567890123456789XY";
+		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
+		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		return secretKey;
+	}
+
 } 
