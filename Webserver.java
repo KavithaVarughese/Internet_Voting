@@ -21,11 +21,13 @@ import java.security.spec.X509EncodedKeySpec;
 // Client class 
 public class Webserver
 { 
+	//Nonce for packet 1
 	private static long N1 = 5497326541L;
-	private static long N2 = 3725678901L;
+
+	//Necessities for AES Encryption
 	static Cipher cipher;
 	private static SecretKey SharedKey = getSecretKey();
-	
+
 	public static void main(String[] args) throws IOException 
 	{ 
 		try
@@ -43,7 +45,7 @@ public class Webserver
 			DataOutputStream dos = new DataOutputStream(s.getOutputStream()); 
 	
 			// the following loop performs the exchange of 
-			// information between client and client handler 
+			// information between Webserver and S1 server
 			while (true) 
 			{ 
 
@@ -52,7 +54,9 @@ public class Webserver
 
 				// Voter enters voter Id
 				String VoterID = scn.nextLine();
+				// Things to be discuessed with Ritika .. till here
 
+				//Packet 1 generation
 				String packet1 = getmessagePacket1(VoterID);
 				 
 
@@ -67,31 +71,19 @@ public class Webserver
 				HashMap<String, String> CandidateTable = (HashMap) mapdis.readObject();
 
 				//Print Candidates
-				int i = 1;
-				for (String item: CandidateTable.keySet()) {
-					System.out.println( Integer.toString(i) + " : " + item);
-					i++;
-				}
+				printMenu(CandidateTable);
 				
-				// If client sends exit,close this connection 
-				// and then break from the while loop 
-				// if(tosend.equals("Exit")) 
-				// { 
-				// 	System.out.println("Closing this connection : " + s); 
-				// 	s.close(); 
-				// 	System.out.println("Connection closed"); 
-				// 	break; 
-				// } 
-				
-				// printing date or time as requested by client 
+				// recieving packet 2
 				String received = dis.readUTF(); 
-				System.out.println(received); 
+				String packet2 = decryptAES(received, SharedKey);
+				System.out.println(packet2);
+				break; 
 			} 
 			
 			// closing resources 
-			// scn.close(); 
-			// dis.close(); 
-			// dos.close(); 
+			 scn.close(); 
+			 dis.close(); 
+			 dos.close(); 
 		}catch(Exception e){ 
 			e.printStackTrace(); 
 		} 
@@ -122,11 +114,30 @@ public class Webserver
 		return encryptedText;
 	}
 
+	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
+	{
+		cipher = Cipher.getInstance("AES");
+		Base64.Decoder decoder = Base64.getDecoder();
+		byte[] encryptedTextByte = decoder.decode(encryptedText);
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+		String decryptedText = new String(decryptedByte);
+		return decryptedText;
+	}
+
 	public static SecretKey getSecretKey(){
 		String keyStr = "012345678901234567890123456789XY";
 		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		return secretKey;
+	}
+
+	public static void printMenu(HashMap<String,String> CandidateTable){
+		int i = 1;
+		for (String item: CandidateTable.keySet()) {
+			System.out.println( Integer.toString(i) + " : " + item);
+			i++;
+		}
 	}
 
 } 

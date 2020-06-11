@@ -25,6 +25,7 @@ class VoterInfo{
    private String password;
    private String email;
    private String salt;
+   public String uniqueId;
    public boolean uidAssigned;
 
    //constructor
@@ -56,10 +57,18 @@ class VoterInfo{
    public boolean getUidAssigned()
    {
       return this.uidAssigned;
-   }  
+   }
+   public String getUniqueId()
+   {
+      return this.uniqueId;
+   }
    public void changeUidAssigned()
    {
       this.uidAssigned = true;
-   }    
+   }  
+   public void setUniqueId(String uniqueId)
+   {
+      this.uniqueId = uniqueId;
+   }   
 }
 

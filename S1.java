@@ -24,8 +24,6 @@ import java.security.spec.X509EncodedKeySpec;
 public class S1
 { 
 	
-	private long N1 = 5497326541L;
-	private long N2 = 3725678901L;
 	private long N3 = 3724116239L;
 
 	public static void main(String[] args) throws IOException 
@@ -74,19 +72,21 @@ class VoterHandler extends Thread
 	VoterData temp1 = new VoterData();
 	public HashMap<String, VoterInfo> VoterTable = temp1.getVoterTable();
 
-	//creating Candidate table
+	//accessing Candidate table
 	CandidateData temp2 = new CandidateData();
 	public HashMap<String, String> CandidateTable = temp2.getCandidateTable();
 
-	//create empty Voter Check Table
+	//create empty VoterCheck Table
 	public static HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>(); 
 
 
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s; 
+
+	//For AES encryption Decryption
 	static Cipher cipher;
-	private SecretKey SharedKey = getSecretKey();
+	private static SecretKey SharedKey = getSecretKey();
 
 
 	// Constructor 
@@ -108,49 +108,43 @@ class VoterHandler extends Thread
 		{ 
 			try { 
 
-				//get votertable
-
-				// PACKET 1
-
 				// receive packet 1
 				received = dis.readUTF(); 
 				String packet1 = decryptAES(received, SharedKey);
 				String[] msgList = packet1.split("\\s+");
 				String VoterId = msgList[1];
+				long N1 = Long.parseLong(msgList[2]);
 
+				String uniqueID;
 				if(!VoterTable.get(VoterId).getUidAssigned())
 				{
 					do
 					{
 						//get random uniqueID
-						String uniqueID = getAlphaNumericString(10);
+						uniqueID = getAlphaNumericString(10);
 						//assign if uniqueID is unique
 						if(!VoterCheckTable.containsKey(uniqueID))
 						{
 							VoterCheck voter = new VoterCheck(VoterId,uniqueID);
 							VoterCheckTable.put(uniqueID, voter);
+							VoterTable.get(VoterId).changeUidAssigned();
+							VoterTable.get(VoterId).setUniqueId(uniqueID);
 							break;
 						}
 					}while(true);
 				}
 
+
+				//sending candidate list as an hashmap object to Webserver
 				ObjectOutputStream mapdos = new ObjectOutputStream(dos);
 				mapdos.writeObject(CandidateTable);
 				
+				//Semding packet 2 
+				String packet2 = getmessagePacket2(VoterTable.get(VoterId).getUniqueId(), N1);
+				dos.writeUTF(packet2);
+
 				break;
-			// 	//acknowledgemnt to close socket
-			// 	if(received.equals("Exit")) 
-			// 	{ 
-			// 		System.out.println("Client " + this.s + " sends exit..."); 
-			// 		System.out.println("Closing this connection."); 
-			// 		this.s.close(); 
-			// 		System.out.println("Connection closed"); 
-			// 		break; 
-			// 	} 
-				
-			// 	// write on output stream
-			// 	// response to the voter
-			// 	dos.writeUTF("Response from S1");
+				//End of Packet 2
 
 			 } catch (IOException e) { 
 			 	e.printStackTrace(); 
@@ -217,6 +211,17 @@ class VoterHandler extends Thread
 		} 
 
 	}
+
+	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
+	{
+		cipher = Cipher.getInstance("AES");
+		byte[] plainTextByte = plainText.getBytes();
+		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+		byte[] encryptedByte = cipher.doFinal(plainTextByte);
+		Base64.Encoder encoder = Base64.getEncoder();
+		String encryptedText = encoder.encodeToString(encryptedByte);
+		return encryptedText;
+	}
 	
 	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
 	{
@@ -256,11 +261,25 @@ class VoterHandler extends Thread
         return sb.toString(); 
 	}
 	
-	public SecretKey getSecretKey(){
+	public static SecretKey getSecretKey(){
 		String keyStr = "012345678901234567890123456789XY";
 		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		return secretKey;
 	}
 
+	public static String getmessagePacket2(String uniqueID, long N1) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	{
+		long N2 = 3725678901L;
+		String packet = "";
+		String secret = getAlphaNumericString(10);
+		try
+		{
+			packet = encryptAES(uniqueID + " " + Long.toString(N1-1) + " " + Long.toString(N2) + " " + secret , SharedKey);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+
+		return packet;
+	}
 } 
