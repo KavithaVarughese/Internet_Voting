@@ -9,13 +9,13 @@
     S2.java
     
   Please compile using the following <br />
-    javac "./path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" Webserver.java <br />
-    javac "./path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" S1.java <br />
+    javac ".:/path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" Webserver.java <br />
+    javac ".:/path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" S1.java <br />
     javac S2.java <br />
     
   Run the program using <br />
-    java "./path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" Webserver <br />
-    java "./path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" S1 <br />
+    java ".:/path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" Webserver <br />
+    java ".:/path/mail.jar:/path/activation.jar:/path/javax.mail.jar;" S1 <br />
     java S2
 
 
