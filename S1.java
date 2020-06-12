@@ -1,6 +1,6 @@
-// Java implementation of Server 1 
+// Java implementation of Server 1
+// Save file as S1.class 
 
-// Saved file as S1.class 
 import java.io.*; 
 import java.text.*; 
 import java.util.*; 
@@ -71,8 +71,11 @@ class VoterHandler extends Thread
 { 
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
-	final Socket s; 
+	final Socket s;
+	// private SecretKey SharedKey;		//datatype needs to be created (for KAVITHA)
 	
+	private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
+	private int N2 = 1234567890;
 
 	// Constructor 
 	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos) 
@@ -80,7 +83,19 @@ class VoterHandler extends Thread
 		this.s = s; 
 		this.dis = dis; 
 		this.dos = dos; 
-	} 
+	}
+
+	public static String decryptAES(String encryptedText, SecretKey secretKey)
+			throws Exception {
+		Base64.Decoder decoder = Base64.getDecoder();
+		byte[] encryptedTextByte = decoder.decode(encryptedText);
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+		String decryptedText = new String(decryptedByte);
+		return decryptedText;
+	}
+
+
 
 	@Override
 	public void run() 
@@ -98,6 +113,7 @@ class VoterHandler extends Thread
 			try { 
 
 				// Send something to the voter
+
 				//dos.writeUTF("Sending some information\n"+ 
 							//"Type Exit to terminate connection."); 
 				//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
@@ -112,8 +128,7 @@ class VoterHandler extends Thread
 
 
 				int flag = 0,i=0;
-				while(flag < 3)
-			    {
+				while(flag < 3){
 					// receive username
 					String Username = dis.readUTF();
 					System.out.println(Username);
@@ -144,11 +159,11 @@ class VoterHandler extends Thread
 					hp = enc.encodeToString(hash);
 					}
 					catch (NoSuchAlgorithmException ex) {
-					      throw new IllegalStateException( ex);
-					    }
+					    throw new IllegalStateException( ex);
+					}
 					catch (InvalidKeySpecException ex) {
-					      throw new IllegalStateException("Invalid SecretKeyFactory", ex);
-					    }
+					    throw new IllegalStateException("Invalid SecretKeyFactory", ex);
+					}
 					
 					  //////////////////////////////
 
@@ -196,24 +211,73 @@ class VoterHandler extends Thread
 					}
 				}
 				//acknowledgemnt to close socket
-				received = dis.readUTF();
-				if(received.equals("Exit")) 
-				{ 
-					System.out.println("Client " + this.s + " sends exit..."); 
-					System.out.println("Closing this connection."); 
+				// received = dis.readUTF();
+				// if(received.equals("Exit")) 
+				// { 
+				// 	System.out.println("Client " + this.s + " sends exit..."); 
+				// 	System.out.println("Closing this connection."); 
+				
+				// receive the response from voter
+				received = dis.readUTF(); 
+
+				//------------------------------------------------------------------------------
+				//packet 3 receiving code
+
+				String Msg = decryptAES(received, SharedKey);
+				String[] msgList = Msg.split("\\s+");			//splits to a list of rsa encrypted packet, uid, dig sig and N2-1
+
+				int UID = Integer.valueOf(msgList[1]);
+				int N2_mod = Integer.valueOf(msgList[3]);
+
+				if (voterLst.contains(UID) || (N2_mod != N2-1)){
+					System.out.println("Voter already voted");
+					System.out.println("Refusing this connection.");
 					this.s.close(); 
 					System.out.println("Connection closed"); 
 					break; 
-				} 
-				
-				// write on output stream
-				// response to the voter
-				dos.writeUTF("Response from S1");
+				}
 
-			} catch (IOException e) { 
+				else
+				{
+
+					voterLst.add(UID);			//adding the new voter to the voter set
+
+					System.out.println("Data from the Voter:");
+					System.out.println(UID);
+					System.out.println(N2_mod);
+					System.out.println(msgList[0]);
+					System.out.println(msgList[2]);
+
+						//packet goes to S2. (FOR FATHIMA)
+
+
+
+
+
+
+				//------------------------------------------------------------------------------
+					
+					//acknowledgemnt to close socket
+					if(received.equals("Exit")) 
+					{ 
+						System.out.println("Client " + this.s + " sends exit..."); 
+						System.out.println("Closing this connection."); 
+						this.s.close(); 
+						System.out.println("Connection closed"); 
+						break; 
+					} 
+					
+					// write on output stream
+					// response to the voter
+					dos.writeUTF("Response from S1");
+				}
+
+			} //ending try
+
+			catch (IOException e) { 
 				e.printStackTrace(); 
 			} 
-		} 
+		}		//closing while 
 		
 		try
 		{ 
@@ -221,8 +285,8 @@ class VoterHandler extends Thread
 			this.dis.close(); 
 			this.dos.close(); 
 			
-		}catch(IOException e)
-		{ 
+		}
+		catch(IOException e){ 
 			e.printStackTrace(); 
 		} 
 
@@ -272,5 +336,5 @@ class VoterHandler extends Thread
 			e.printStackTrace(); 
 		} 
 
-	} 
-} 
+	}	//end run() 
+}//ending voter class 
