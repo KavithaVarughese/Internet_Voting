@@ -11,6 +11,8 @@ import java.net.*;
 // S1 class 
 public class S2
 { 
+    private long N3 = 3724116239L;
+
 	public static void main(String[] args) throws IOException 
 	{ 
 		// S2 is listening on port 1234

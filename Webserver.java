@@ -13,6 +13,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.io.*; 
+import java.text.*; 
+import java.util.*; 
 import java.net.*; 
 import java.util.Scanner; 
 import javax.crypto.spec.SecretKeySpec;
@@ -21,14 +23,13 @@ import javax.crypto.spec.SecretKeySpec;
 public class Webserver
 { 	
 
-	private static int CID = 213413492;			//to be changed with a method. Can't be static
-	private static int secret = 2132259992;
-	private static int UID = 80912839;
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
-	private static int N2 = 1234567890;
+	private static long N1 = 5497326541L;
 
+	//Necessities for AES Encryption
 	static Cipher cipher;
 	private static SecretKey SharedKey = getSecretKey();				//datatype to be created (for KAVITHA)
+
 
 	public static void main(String[] args) throws IOException 
 	{ 
@@ -36,7 +37,7 @@ public class Webserver
 		{ 
 			Integer clientKey;
 			Scanner scn = new Scanner(System.in); 
-			
+		
 			// getting localhost ip 
 			InetAddress ip = InetAddress.getByName("localhost"); 
 	
@@ -48,13 +49,12 @@ public class Webserver
 			DataOutputStream dos = new DataOutputStream(s.getOutputStream()); 
 	
 			// the following loop performs the exchange of 
-			// information between client and client handler 
+			// information between Webserver and S1 server
 			while (true) 
 
 			{ 
-				// 2 way authentication
+				// 2-Factor authentication
 				String res = Login.authenticate(dis,dos);
-
 
 				//System.out.println(res); 
 				//Diffie Hellman Exchange
@@ -69,40 +69,102 @@ public class Webserver
 					break;
 				}
 
-				//code till diffie hellman
+				System.out.println("--------------------------Diffie Hellman Complete----------------------------");
 
+
+				//PACKET 1
+
+				// Voter starting communication with packet 1
+				System.out.println("Please enter your VoterID : B160779CS [This step is redundant ... Has to be removed]");
+
+				// Voter enters voter Id
+				String VoterID = scn.nextLine();
+				// Things to be discuessed with Ritika .. till here
+
+				//PACKET 1 and 2
+
+				//Packet 1 generation
+				String packet1 = getmessagePacket1(VoterID);
+				 
+
+				//Packet 1 sent to S1 
+				System.out.println("----------------------------Sending packet 1----------------------------------------");
+				dos.writeUTF(packet1); 
+
+				//recieve the candidate table in the form of a hash
+				// Hash map Form :
+				// C0 : <candidate id>
+				// you can get the unique id of candidate using CandidateTable.get("C0")
+				ObjectInputStream mapdis = new ObjectInputStream(dis);
+				HashMap<String, String> CandidateTable = (HashMap) mapdis.readObject();
+
+				//Print Candidates
+				printMenu(CandidateTable);
+
+				//casting the vote
+				System.out.println("Enter Name of Candidate you wish to vote for . Must be exactly as mentioned in the list.");
+				String CID;
+				do{
+					String Vote = scn.nextLine();
+					if(CandidateTable.containsKey(Vote)){
+						CID = CandidateTable.get(Vote);
+						break;
+					}
+					else{
+						System.out.println("Please mention the candidate name exactly as mentioned in the list.");
+					}
+				}while(true);
 				
+				// recieving packet 2
+				String received = dis.readUTF(); 
+				
+				//decrypts the packet 2
+				String packet2 = decryptAES(received, SharedKey);
+				String[] msgList = packet2.split("\\s+");
+				String UID = msgList[0];
+				long N1_mod = Long.parseLong(msgList[1]);
+				long N2 = Long.parseLong(msgList[2]);
+				String secret = msgList[3];
+
+				//Check if nonce 1 is correct
+				if ((N1_mod != N1-1)){
+					System.out.println("Voter already voted");
+					System.out.println("Refusing this connection.");
+					System.out.println("Connection closed"); 
+					break; 
+				}
 				
 				//PACKET 3
 
-				// code to obtain the message (packet3)------------------------------- 
-				System.out.println("Sending Message.");
-				String tosend = getmessagePacket3();
+				// sending packet 3
+				System.out.println("----------------------------Sending Packet3----------------------------------------");
+				String tosend = getmessagePacket3(CID, secret, UID, N2);
 				dos.writeUTF(tosend);
 				
 				break;
 				
-
-
 			} 
 			
 			// closing resources 
-			scn.close(); 
-			dis.close(); 
-			dos.close(); 
+			 scn.close(); 
+			 dis.close(); 
+			 dos.close(); 
 		}catch(Exception e){ 
 			e.printStackTrace(); 
 		} 
 	}
 
-	public static String getmessagePacket3() throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+
+	//External Functions .....
+
+	public static String getmessagePacket3(String CID, String secret, String UID, long N2) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
 	{													//mod fn header here if changing the key
 		String Msg = "";
 		try{
-			Msg = Integer.toString(CID) + " " + Integer.toString(secret);
-			Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + Integer.toString(UID);
+			Msg = CID + " " + secret;
+			Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + UID;
 			N2 = N2 - 1;
-			Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2), SharedKey);
+			Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Long.toString(N2), SharedKey);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -160,7 +222,22 @@ public class Webserver
 	    return signature;
     }
 
-    public static String encryptAES(String plainText, SecretKey secretKey) throws Exception {
+	public static String getmessagePacket1(String VoterID) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	{
+		String packet = "";
+		try
+		{
+			String msg = "I_want_to_vote";
+			packet = encryptAES(msg + " " + VoterID + " " + Long.toString(N1), SharedKey);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+
+		return packet;
+	}
+
+	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
+	{
 		cipher = Cipher.getInstance("AES");
 		byte[] plainTextByte = plainText.getBytes();
 		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
@@ -170,12 +247,30 @@ public class Webserver
 		return encryptedText;
 	}
 
+	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
+	{
+		cipher = Cipher.getInstance("AES");
+		Base64.Decoder decoder = Base64.getDecoder();
+		byte[] encryptedTextByte = decoder.decode(encryptedText);
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+		String decryptedText = new String(decryptedByte);
+		return decryptedText;
+	}
 	public static SecretKey getSecretKey(){
 		String keyStr = "012345678901234567890123456789XY";
 		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		return secretKey;
+	} 
+
+	public static void printMenu(HashMap<String,String> CandidateTable){
+		int i = 1;
+		for (String item: CandidateTable.keySet()) {
+			System.out.println( Integer.toString(i) + " : " + item);
+			i++;
+		}
 	}
 
-
 } 
+
