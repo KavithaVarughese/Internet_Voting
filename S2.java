@@ -1,9 +1,7 @@
 // Java implementation of Server 2
-<<<<<<< HEAD
-// Saved file as Server2.class
-=======
+
 // Save file as S2.classs
->>>>>>> packet3
+
 
 import java.io.*; 
 import java.text.*; 

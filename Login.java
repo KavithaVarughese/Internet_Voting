@@ -36,7 +36,7 @@ public class Login
 			i=i-1;
 		    
 		    //enter name
-		    name = cnsl.readLine("Enter Name: "); // read line from the user input
+		    name = cnsl.readLine("Enter UserId: "); // read line from the user input
 			
 			//enter password
 			System.out.println("Enter password");

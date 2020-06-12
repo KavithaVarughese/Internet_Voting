@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 // S1 class 
@@ -72,7 +72,9 @@ class VoterHandler extends Thread
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s;
-	// private SecretKey SharedKey;		//datatype needs to be created (for KAVITHA)
+
+	static Cipher cipher;
+	private SecretKey SharedKey = getSecretKey();		//datatype needs to be created (for KAVITHA)
 	
 	private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
 	private int N2 = 1234567890;
@@ -85,15 +87,7 @@ class VoterHandler extends Thread
 		this.dos = dos; 
 	}
 
-	public static String decryptAES(String encryptedText, SecretKey secretKey)
-			throws Exception {
-		Base64.Decoder decoder = Base64.getDecoder();
-		byte[] encryptedTextByte = decoder.decode(encryptedText);
-		cipher.init(Cipher.DECRYPT_MODE, secretKey);
-		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
-		String decryptedText = new String(decryptedByte);
-		return decryptedText;
-	}
+	
 
 
 
@@ -111,20 +105,15 @@ class VoterHandler extends Thread
 		while (true) 
 		{ 
 			try { 
-
-				// Send something to the voter
-
-				//dos.writeUTF("Sending some information\n"+ 
-							//"Type Exit to terminate connection."); 
 				//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
-				String salttemp = "asfavadfbgsnhfns";
+				//salt saved in db as string .. being converted to bytes
+				
 				SecureRandom random = new SecureRandom();
 				Base64.Encoder enc = Base64.getEncoder();
 				//byte[] salt = new byte[16];
-				byte[] salt = salttemp.getBytes();
-
-
-				final String pass = "adminroot";
+				
+				
+				
 
 
 				int flag = 0,i=0;
@@ -133,6 +122,12 @@ class VoterHandler extends Thread
 					String Username = dis.readUTF();
 					System.out.println(Username);
 					
+
+					//Kavitha's code to add the salt
+					String salttemp = "asfavadfbgsnhfns";
+					byte[] salt = salttemp.getBytes();
+
+
 					//get salt to corresponding user from database(using some random thing as salt as of now)
 					random.nextBytes(salt);
 					
@@ -149,8 +144,10 @@ class VoterHandler extends Thread
 					String hp;
 					
 					//////////////////
-					// this is just done for checking, at last we need to get hash from database////////////
-					
+					// Hashing the passwork string taken from the database////////////
+					//Kavitha's database password
+					final String pass = "adminroot";
+
 					try{
 					KeySpec spec = new PBEKeySpec(pass.toCharArray(),salt,65536, 128);
 					SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
@@ -171,6 +168,7 @@ class VoterHandler extends Thread
 
 					//receive hashed password
 					String Pwd = dis.readUTF();
+					
 					
 
 					//checking hashkey in database with one sent by user
@@ -194,7 +192,11 @@ class VoterHandler extends Thread
 				if(flag == 4)
 				{
 					//Add the recipients email ID
-					String check = TLSEmail.otp("ritika_b160540cs@nitc.ac.in");
+					//get email from database Kavitha's
+
+					String check = TLSEmail.otp("kavithavarughese@gmail.com");
+
+
 					//System.out.println("OTP is:" +check);
 					String otp = dis.readUTF();
 					if(otp.equals(check))
@@ -210,14 +212,12 @@ class VoterHandler extends Thread
 						dos.flush();
 					}
 				}
-				//acknowledgemnt to close socket
-				// received = dis.readUTF();
-				// if(received.equals("Exit")) 
-				// { 
-				// 	System.out.println("Client " + this.s + " sends exit..."); 
-				// 	System.out.println("Closing this connection."); 
 				
-				// receive the response from voter
+				//Till Diffie Hellman
+
+				// PACKET 3
+				
+				// receive packet 3
 				received = dis.readUTF(); 
 
 				//------------------------------------------------------------------------------
@@ -229,6 +229,7 @@ class VoterHandler extends Thread
 				int UID = Integer.valueOf(msgList[1]);
 				int N2_mod = Integer.valueOf(msgList[3]);
 
+				//Check if nonce is correct
 				if (voterLst.contains(UID) || (N2_mod != N2-1)){
 					System.out.println("Voter already voted");
 					System.out.println("Refusing this connection.");
@@ -250,33 +251,15 @@ class VoterHandler extends Thread
 
 						//packet goes to S2. (FOR FATHIMA)
 
-
-
-
-
-
-				//------------------------------------------------------------------------------
-					
-					//acknowledgemnt to close socket
-					if(received.equals("Exit")) 
-					{ 
-						System.out.println("Client " + this.s + " sends exit..."); 
-						System.out.println("Closing this connection."); 
-						this.s.close(); 
-						System.out.println("Connection closed"); 
-						break; 
-					} 
-					
-					// write on output stream
-					// response to the voter
-					dos.writeUTF("Response from S1");
 				}
-
+				break;
 			} //ending try
 
 			catch (IOException e) { 
 				e.printStackTrace(); 
-			} 
+			} catch(Exception e){
+				e.printStackTrace();
+			}
 		}		//closing while 
 		
 		try
@@ -337,4 +320,21 @@ class VoterHandler extends Thread
 		} 
 
 	}	//end run() 
+
+	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception {
+		cipher = Cipher.getInstance("AES");
+		Base64.Decoder decoder = Base64.getDecoder();
+		byte[] encryptedTextByte = decoder.decode(encryptedText);
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+		String decryptedText = new String(decryptedByte);
+		return decryptedText;
+	}
+
+	public static SecretKey getSecretKey(){
+		String keyStr = "012345678901234567890123456789XY";
+		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
+		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		return secretKey;
+	}
 }//ending voter class 

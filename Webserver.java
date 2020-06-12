@@ -15,6 +15,7 @@ import java.util.Base64;
 import java.io.*; 
 import java.net.*; 
 import java.util.Scanner; 
+import javax.crypto.spec.SecretKeySpec;
 
 // Client class 
 public class Webserver
@@ -25,7 +26,9 @@ public class Webserver
 	private static int UID = 80912839;
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
 	private static int N2 = 1234567890;
-	private SecretKey SharedKey;				//datatype to be created (for KAVITHA)
+
+	static Cipher cipher;
+	private static SecretKey SharedKey = getSecretKey();				//datatype to be created (for KAVITHA)
 
 	public static void main(String[] args) throws IOException 
 	{ 
@@ -47,9 +50,14 @@ public class Webserver
 			// the following loop performs the exchange of 
 			// information between client and client handler 
 			while (true) 
-			{
+
+			{ 
+				// 2 way authentication
 				String res = Login.authenticate(dis,dos);
+
+
 				//System.out.println(res); 
+				//Diffie Hellman Exchange
 				if(res.equals("accepted"))
 				{
 					clientKey = DHClient.fetchClientKey(dis, dos);
@@ -61,29 +69,21 @@ public class Webserver
 					break;
 				}
 
-				// String tosend = scn.nextLine(); 
-				// dos.writeUTF(tosend); 
-				System.out.println(dis.readUTF()); 				//not sure if there is anything to print. (check)
-				// String tosend = scn.nextLine();
+				//code till diffie hellman
+
+				
+				
+				//PACKET 3
 
 				// code to obtain the message (packet3)------------------------------- 
 				System.out.println("Sending Message.");
-				String tosend = makeMsg();
+				String tosend = getmessagePacket3();
 				dos.writeUTF(tosend);
 				
-				// If client sends exit,close this connection 
-				// and then break from the while loop 
-				if(tosend.equals("Exit")) 
-				{ 
-					System.out.println("Closing this connection : " + s); 
-					s.close(); 
-					System.out.println("Connection closed"); 
-					break; 
-				} 
+				break;
 				
-				// printing date or time as requested by client 
-				String received = dis.readUTF(); 
-				System.out.println(received); 
+
+
 			} 
 			
 			// closing resources 
@@ -95,12 +95,17 @@ public class Webserver
 		} 
 	}
 
-	public static String makeMsg() throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	public static String getmessagePacket3() throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
 	{													//mod fn header here if changing the key
-		String Msg = Integer.toString(CID) + " " + Integer.toString(secret);
-		Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + Integer.toString(UID);
-		N2 = N2 - 1;
-		Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2), SharedKey);
+		String Msg = "";
+		try{
+			Msg = Integer.toString(CID) + " " + Integer.toString(secret);
+			Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + Integer.toString(UID);
+			N2 = N2 - 1;
+			Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2), SharedKey);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 		// Msg = Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Integer.toString(N2);
 		return Msg;
 	}
@@ -155,14 +160,21 @@ public class Webserver
 	    return signature;
     }
 
-    public static String encryptAES(String plainText, SecretKey secretKey)
-			throws Exception {
+    public static String encryptAES(String plainText, SecretKey secretKey) throws Exception {
+		cipher = Cipher.getInstance("AES");
 		byte[] plainTextByte = plainText.getBytes();
 		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
 		byte[] encryptedByte = cipher.doFinal(plainTextByte);
 		Base64.Encoder encoder = Base64.getEncoder();
 		String encryptedText = encoder.encodeToString(encryptedByte);
 		return encryptedText;
+	}
+
+	public static SecretKey getSecretKey(){
+		String keyStr = "012345678901234567890123456789XY";
+		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
+		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		return secretKey;
 	}
 
 
