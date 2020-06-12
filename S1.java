@@ -101,9 +101,11 @@ class VoterHandler extends Thread
 				//dos.writeUTF("Sending some information\n"+ 
 							//"Type Exit to terminate connection."); 
 				//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
+				String salttemp = "asfavadfbgsnhfns";
 				SecureRandom random = new SecureRandom();
 				Base64.Encoder enc = Base64.getEncoder();
-				byte[] salt = new byte[16];
+				//byte[] salt = new byte[16];
+				byte[] salt = salttemp.getBytes();
 
 
 				final String pass = "adminroot";
