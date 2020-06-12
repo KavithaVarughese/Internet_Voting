@@ -1,12 +1,24 @@
 // Java implementation of Server 1 
 
 // Saved file as S1.class 
-
 import java.io.*; 
 import java.text.*; 
 import java.util.*; 
 import java.net.*; 
+import java.security.*;
+import javax.crypto.*;
+import java.lang.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 // S1 class 
 public class S1
 { 
@@ -76,19 +88,113 @@ class VoterHandler extends Thread
 		String received; 
 		String toreturn; 
 		
+		String accepted = "accepted";
+		String rejected = "rejected";
+		Integer serverKey;
+		
 		//All communication with voter in this block
 		while (true) 
 		{ 
 			try { 
 
 				// Send something to the voter
-				dos.writeUTF("Sending some information\n"+ 
-							"Type Exit to terminate connection."); 
-				
-				// receive the response from voter
-				received = dis.readUTF(); 
-				
+				//dos.writeUTF("Sending some information\n"+ 
+							//"Type Exit to terminate connection."); 
+				//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
+				SecureRandom random = new SecureRandom();
+				Base64.Encoder enc = Base64.getEncoder();
+				byte[] salt = new byte[16];
+
+
+				final String pass = "adminroot";
+
+
+				int flag = 0,i=0;
+				while(flag < 3)
+			    {
+					// receive username
+					String Username = dis.readUTF();
+					System.out.println(Username);
+					
+					//get salt to corresponding user from database(using some random thing as salt as of now)
+					random.nextBytes(salt);
+					
+					//encode the salt to send
+					String salt1 = Base64.getEncoder().encodeToString(salt);
+					String message = "Sending Salt";
+					System.out.println(message);
+					//System.out.println(salt1);
+
+					//sending encoded salt
+					dos.flush();
+					dos.writeUTF(salt1);
+					dos.flush();
+					String hp;
+					
+					//////////////////
+					// this is just done for checking, at last we need to get hash from database////////////
+					
+					try{
+					KeySpec spec = new PBEKeySpec(pass.toCharArray(),salt,65536, 128);
+					SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+					byte hash[] = f.generateSecret(spec).getEncoded();
+					
+					hp = enc.encodeToString(hash);
+					}
+					catch (NoSuchAlgorithmException ex) {
+					      throw new IllegalStateException( ex);
+					    }
+					catch (InvalidKeySpecException ex) {
+					      throw new IllegalStateException("Invalid SecretKeyFactory", ex);
+					    }
+					
+					  //////////////////////////////
+
+
+
+					//receive hashed password
+					String Pwd = dis.readUTF();
+					
+
+					//checking hashkey in database with one sent by user
+					if(Username.equals("root") && Pwd.equals(hp))
+					{
+						dos.writeUTF(accepted);
+						dos.flush();
+						flag = 4;
+						
+					}
+					else
+					{
+						dos.writeUTF(rejected);
+						dos.flush();
+						System.out.println("rejected");
+						flag ++;
+					}
+						
+				}
+					//sending an otp
+				if(flag == 4)
+				{
+					//Add the recipients email ID
+					String check = TLSEmail.otp("ritika_b160540cs@nitc.ac.in");
+					//System.out.println("OTP is:" +check);
+					String otp = dis.readUTF();
+					if(otp.equals(check))
+					{
+						dos.writeUTF(accepted);
+						dos.flush();
+						serverKey = DHServer.fetchServerKey(dis,dos);
+						//System.out.println(serverKey);
+					}
+					else
+					{
+						dos.writeUTF(rejected);
+						dos.flush();
+					}
+				}
 				//acknowledgemnt to close socket
+				received = dis.readUTF();
 				if(received.equals("Exit")) 
 				{ 
 					System.out.println("Client " + this.s + " sends exit..."); 

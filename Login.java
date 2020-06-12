@@ -26,30 +26,36 @@ public class Login
       try {
         
          cnsl = System.console();  // creates a console object
-
-         
-         if (cnsl != null) // if console is not null
-	{
+		 if (cnsl != null) // if console is not null
+		 {
 	       int i = 3;
-		
-			String salt2 = dis.readUTF();
-			//System.out.println(salt2);
-			String salt1 = dis.readUTF();
-			//System.out.println(salt1);
+
 			while(i>0)
-                	{  
-			     i = i-1;
-		        name = cnsl.readLine("Enter Name: "); // read line from the user input
+			{
+			
+			i=i-1;
+		    
+		    //enter name
+		    name = cnsl.readLine("Enter Name: "); // read line from the user input
+			
+			//enter password
 			System.out.println("Enter password");
 			char[] pwd = cnsl.readPassword(); // read password into the char array
 			final String pass = String.valueOf(pwd);
-			SecureRandom random = new SecureRandom();
-			String hp;
-			//byte[] salt = new byte[16];
-			//random.nextBytes(salt);
-			//Reading Salt
 			
-			byte[] salt = salt1.getBytes();
+			//sending username
+			dos.writeUTF(name);
+			dos.flush();
+
+			//Reading encoded  Salt
+			String salt1 = dis.readUTF();
+			
+			//decoding read salt
+			byte[] salt = Base64.getDecoder().decode(salt1) ;
+
+
+			//hashing password with salt sent by server
+			String hp;
 			try{
 			KeySpec spec = new PBEKeySpec(pass.toCharArray(),salt,65536, 128);
 			SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
@@ -62,19 +68,15 @@ public class Login
 			    catch (InvalidKeySpecException ex) {
 			      throw new IllegalStateException("Invalid SecretKeyFactory", ex);
 			    }
-			//String salt1 = enc.encodeToString(salt);
-			//Sending User Name
-			dos.writeUTF(name);
+
+
+			 //send hashed password to server.
+			dos.writeUTF(hp);
 			dos.flush();
-			//Sending Hashed password
-			//dos.writeUTF(hp);
-			dos.writeUTF(pass);
-			dos.flush();
-			//System.out.println(hp);
-			//Receiving status
-			//String stat = dis.readUTF();
+
+
+			//response from server
 			String stat2 = dis.readUTF();
-			//System.out.println("Stat "+stat2);
 			if(stat2.equals("rejected"))
 			System.out.println("Please try again");
 			else
