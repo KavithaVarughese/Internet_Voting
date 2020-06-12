@@ -12,6 +12,7 @@ public class Webserver
 	{ 
 		try
 		{ 
+			Integer clientKey;
 			Scanner scn = new Scanner(System.in); 
 			
 			// getting localhost ip 
@@ -28,7 +29,18 @@ public class Webserver
 			// information between client and client handler 
 			while (true) 
 			{ 
-				System.out.println(dis.readUTF()); 
+				String res = Login.authenticate(dis,dos);
+				//System.out.println(res); 
+				if(res.equals("accepted"))
+				{
+					clientKey = DHClient.fetchClientKey(dis, dos);
+					//System.out.println(clientKey);
+				}
+				else
+				{
+					System.out.println("Please contact the Election Authority");
+					break;
+				}
 				String tosend = scn.nextLine(); 
 				dos.writeUTF(tosend); 
 				
