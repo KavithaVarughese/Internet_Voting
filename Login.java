@@ -4,6 +4,7 @@ import java.util.*;
 import java.io.*; 
 import javax.crypto.*;
 import java.lang.*;
+import java.math.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -48,9 +49,13 @@ public class Login
 					System.out.println("--------------------- SENDING VOTERID ----------------------");
 					dos.writeUTF(name);
 					dos.flush();
-
-					//Reading encoded  Salt
+						
+					//Reading encoded  Salt message
 					String salt1 = dis.readUTF();
+					if(salt1.equals("rejected"))
+						return "rejected";
+					//Reading encoded Salt
+					salt1 = dis.readUTF();
 			
 					//decoding read salt
 					byte[] salt = Base64.getDecoder().decode(salt1) ;
