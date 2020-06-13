@@ -354,23 +354,14 @@ class VoterHandler extends Thread
 			while (true) 
 			{ 
 				//send request to S2
-				dos_S2.writeUTF("send packet communication 4"); 
+				dos_S2.writeUTF("send packet communication 4 or press Exit"); 
 			
 				//recieve response
 				received = dis_S2.readUTF(); 
 				System.out.println(received); 
-
-				// If S1 sends exit,close this connection 
-				// and then break from the while loop 
-				if(received.equals("Exit")) 
-				{ 
-					System.out.println("Closing this connection : " + s_S2); 
-					s_S2.close(); 
-					System.out.println("Connection closed"); 
-					break; 
-				} 
-				
-				// printing date or time as requested by client 
+			
+				//after recieving simply break;
+				break;
 				
 			} 
 			
