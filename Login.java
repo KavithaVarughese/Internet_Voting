@@ -38,15 +38,14 @@ public class Login
 					i=i-1;
 		    
 		    		//enter name
-		    		name = cnsl.readLine("Enter VoterId : B160779CS\n"); // read line from the user input
+		    		name = cnsl.readLine("Enter VoterId:\n"); // read line from the user input
 			
 					//enter password
-					System.out.println("Enter password : kavitha_pwd");
+					System.out.println("Enter password:");
 					char[] pwd = cnsl.readPassword(); // read password into the char array
 					final String pass = String.valueOf(pwd);
 			
 					//sending VoterId
-					System.out.println("--------------------- SENDING VOTERID ----------------------");
 					dos.writeUTF(name);
 					dos.flush();
 						
@@ -77,7 +76,6 @@ public class Login
 
 
 			 		//send hashed password 
-					System.out.println("-----------------------------Sending hashed password------------------------------------");
 					dos.writeUTF(hp);
 					dos.flush();
 
@@ -92,7 +90,6 @@ public class Login
 						System.out.println("Enter the OTP");
 						String otp = cnsl.readLine();
 						//sending server otp;
-						System.out.println("-----------------------------Sending OTP------------------------------------");
 						dos.writeUTF(otp);
 		                String result = dis.readUTF();
 						if(result.equals("accepted"))

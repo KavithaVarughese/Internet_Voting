@@ -33,21 +33,23 @@ public class S2
         try {
             // Open given file in append mode.
             BufferedWriter out = new BufferedWriter(new FileWriter("Results.txt", false));
+            
             for (Map.Entry m : S2.voteCounter.entrySet()){
                 out.write("\n"+ m.getKey()+" gets " + m.getValue()+ " votes.\n");
             }
             out.close();
-        }
-        catch (Exception e) {
+        }catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     public static void createCandidateTable(){
         voteCounter.put("ahufhuwjekhkjfahsdhaufhiu24hjk",new Long(0));
         voteCounter.put("ent245hjdn7kj2h348jshfkakn5n54",new Long(0));
         voteCounter.put("oi98jhghjg6uaghevhj87435jhk8or",new Long(0));
         voteCounter.put("32j4hhuisucjkhjhds874753lhuh82",new Long(0));
     }
+
     //aes secret key
     public static SecretKey getSecretKey(){
         String keyStr = "012345678901234567890123456789XY";
@@ -55,9 +57,9 @@ public class S2
         SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
         return secretKey;
     }
+
     //publish to a file
-    public static void publish(String fileName, String str)
-    {
+    public static void publish(String fileName, String str){
         try {
             // Open given file in append mode.
             BufferedWriter out = new BufferedWriter(new FileWriter(fileName, true));
@@ -73,27 +75,22 @@ public class S2
         //integer of 512 bits from string
         String message = new String();
         try{
-//            System.out.println("--------------------vote Counting--------------------");
-//            System.out.println("\nRSAed message is "+input);
+
             message = rsa.decryptstr(input,privateKey);
-//            System.out.println(message);
             //cid is Candidate id in the vote
             //secret is the secret of the voter
             String cid = message.split("\\s+")[0];
             String secret = message.split("\\s+")[1];
-//            System.out.println("Cid is "+ cid+" and secret is "+ secret);
             //check if this vote already counted
+
             if(!secretList.contains(secret)){
                 voteCounter.replace(cid,voteCounter.get(cid)+Long.valueOf(1));
                 secretList.add(secret);
                 publish("secrets.txt",secret+"\n");
-//                System.out.println("-------------------------Secret published-----------------");
             }
-        }
-        catch (Exception e){
+        }catch (Exception e){
             e.printStackTrace();
         }
-
     }
 
     public static void main(String[] args) throws IOException
@@ -105,16 +102,13 @@ public class S2
         ServerSocket ss = new ServerSocket(1234);
         Socket s = null;
 
-        while (true)
-        {
+        while (true){
             try{
                 // Accept the incoming request
                 s = ss.accept();
-//                System.out.println("\n----------------------------------S1 connected at " + s+"----------------------");
                 // obtain input and output streams
                 DataInputStream dis = new DataInputStream(s.getInputStream());
                 DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-//                System.out.println("\n--------------------Creating a thread for this connection----------------------");
                 // Create a new Thread with this object.
                 Thread t = new S2Thread(s,dis,dos);
                 // start the thread.
@@ -125,20 +119,19 @@ public class S2
                 s.close();
                 e.printStackTrace();
             }
-
         }
     }
 }
 
 //S2 thread for each vote
 class S2Thread extends Thread{
+
     final DataInputStream dis;
     final DataOutputStream dos;
     final Socket s;
 
     // Constructor
-    public S2Thread(Socket s, DataInputStream dis, DataOutputStream dos)
-    {
+    public S2Thread(Socket s, DataInputStream dis, DataOutputStream dos){
         this.s = s;
         this.dis = dis;
         this.dos = dos;
@@ -155,18 +148,16 @@ class S2Thread extends Thread{
             // obtaining input and output streams
             DataInputStream dis = new DataInputStream(s.getInputStream());
             DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+
             //receive packet 4
             received = dis.readUTF();
             System.out.println("\n------------------------Received packet4-----------------------------");
             //if packet4 was a list of cid and secret combinations
-//            list = received.split("\\s+");
-//            for (int i = 0; i < list.length; i++) {below block}
             //counting
             //decrytpion using aes
             message = EncryptionDecryptionAES.decrypt(received, S2.getSecretKey());
-//            System.out.println("Decrypted pacekt 4 is "+message);
+
             S2.voteCount(message.split("\\s+")[0]);
-            System.out.println("\n-------------------Vote Counted--------------------------");
 
             //Communication packet 5
             if(message!=null){
@@ -174,10 +165,6 @@ class S2Thread extends Thread{
                 dos.writeUTF(toreturn);
                 System.out.println("\n----------------------------Sent Packet5--------------------------------");
             }
-//            //print hash table
-//            for (Map.Entry m : S2.voteCounter.entrySet()){
-//                System.out.println("\n"+ m.getKey()+" gets " + m.getValue()+ " votes.\n");
-//            }
         }
         catch (Exception e){
             e.printStackTrace();
@@ -187,7 +174,6 @@ class S2Thread extends Thread{
             // closing resources
             this.dis.close();
             this.dos.close();
-            System.out.println("\n--------------------------Closing one connection----------------------------");
 
         }catch(IOException e){
             e.printStackTrace();
