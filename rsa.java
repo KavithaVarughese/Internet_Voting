@@ -7,6 +7,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+//import
 
 public class rsa {
 
@@ -52,20 +53,34 @@ public class rsa {
     }
 
     public static String decrypt(byte[] data, PrivateKey privateKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        return new String(cipher.doFinal(data));
+        try{
+            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            String message = new String(cipher.doFinal(data));
+            return message;
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    public static String decrypt(String data, String base64PrivateKey) throws IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
-        return decrypt(Base64.getDecoder().decode(data.getBytes()), getPrivateKey(base64PrivateKey));
+    public static String decryptstr(String data, String base64PrivateKey) throws IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
+        try{
+            String message = decrypt(Base64.getDecoder().decode(data.getBytes()), getPrivateKey(base64PrivateKey));
+            return message;
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
 //    public static void main(String[] args) throws IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, BadPaddingException {
 //        try {
 //            String encryptedString = Base64.getEncoder().encodeToString(encrypt("xyz", publicKey));
 //            System.out.println(encryptedString);
-//            String decryptedString = RSAUtil.decrypt(encryptedString, privateKey);
+//            String decryptedString = decryptstr(encryptedString, privateKey);
 //            System.out.println(decryptedString);
 //        } catch (NoSuchAlgorithmException e) {
 //            System.err.println(e.getMessage());

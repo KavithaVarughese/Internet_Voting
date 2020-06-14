@@ -36,6 +36,14 @@ public class S1
 	
 	private long N3 = 3724116239L;
 
+	//aes secret key
+	public static SecretKey getSecretKey(){
+		String keyStr = "012345678901234567890123456789XY";
+		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
+		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		return secretKey;
+	}
+
 	public static void main(String[] args) throws IOException 
 	{ 
 		// S1 is listening on port 5056 for voter
@@ -52,21 +60,14 @@ public class S1
 				// socket object to receive incoming voter requests 
 				s = ss.accept(); 
 				
-				System.out.println("A new voter is connected : " + s); 
+//				System.out.println("A new voter is connected : " + s);
 				
 				// obtaining input and output streams 
 				DataInputStream dis = new DataInputStream(s.getInputStream()); 
 				DataOutputStream dos = new DataOutputStream(s.getOutputStream()); 
-				VoterData temp1 = new VoterData();
-	
+				
+//				System.out.println("Assigning new thread for this voter");
 
-				//accessing Candidate table
-					CandidateData temp2 = new CandidateData();
-	
-	//create empty VoterCheck Table
-				HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>(); 
-
-				System.out.println("Assigning new thread for this voter"); 
 
 				// create a new thread object 
 				Thread t = new VoterHandler(s, dis, dos, temp1, temp2,VoterCheckTable ); 
@@ -133,7 +134,8 @@ class VoterHandler extends Thread
 		HashMap<String, String> CandidateTable = temp2.getCandidateTable();
 		//socket communication buffer strings
 		String received; 
-		String toreturn; 
+		String toreturn;
+		String vote = new String();
 		
 		//authentication strings
 		String accepted = "accepted";
@@ -146,12 +148,12 @@ class VoterHandler extends Thread
 
 
 		//All communication with voter in this block
-		while(true) 
-		{ 
+//		while(true)
+//		{
 			//Initialize Username .. useful later on in program
 			String Username = "";
 
-			try { 
+			try {
 				
 				//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
 				//Functions for salt functionality
@@ -249,7 +251,7 @@ class VoterHandler extends Thread
 					String otp = dis.readUTF();
 					if(otp.equals(check))
 					{
-						System.out.println("----------------------------Sending Acceptance----------------------------------------");
+						System.out.println("\n----------------------------Sending Acceptance----------------------------------------");
 						dos.writeUTF(accepted);
 						dos.flush();
 						serverKey = DHServer.fetchServerKey(dis,dos);
@@ -257,18 +259,19 @@ class VoterHandler extends Thread
 					}
 					else
 					{
-						System.out.println("----------------------------Rejecting----------------------------------------");
+						System.out.println("\n----------------------------Rejecting----------------------------------------");
 						dos.writeUTF(rejected);
 						dos.flush();
 					}
 				}
 				
-				System.out.println("--------------------------Diffie Hellman Complete----------------------------");
+				System.out.println("\n--------------------------Diffie Hellman Complete----------------------------");
 
 
 				//PACKET 1 and 2
 				// receive packet 1
-				received = dis.readUTF(); 
+				received = dis.readUTF();
+				System.out.println("\n----------------------------Receive Packet1-------------------------------");
 
 				//decrypts the packet 1
 				String packet1 = decryptAES(received, SharedKey);
@@ -278,18 +281,21 @@ class VoterHandler extends Thread
 
 				//generates uniqueId
 				String uniqueID;
+//				System.out.println("-----------------------------------Generate UID----------------------------------");
 				if(!VoterTable.get(VoterId).getUidAssigned())
 				{
 					do
 					{
 						//get random uniqueID
 						uniqueID = getAlphaNumericString(10);
+//						System.out.println("----------------------------------------"+uniqueID+"--------------------------------");
 						//assign if uniqueID is unique
 						if(!VoterCheckTable.containsKey(uniqueID))
 						{
 							VoterCheck voter = new VoterCheck(VoterId,uniqueID);
 							VoterCheckTable.put(uniqueID, voter);
 							VoterTable.get(VoterId).changeUidAssigned();
+//							System.out.println("-------------------------------UID created---------------------------------");
 							VoterTable.get(VoterId).setUniqueId(uniqueID);
 							break;
 						}
@@ -298,115 +304,114 @@ class VoterHandler extends Thread
 
 
 				//sending candidate list as an hashmap object to Webserver
-				System.out.println("----------------------------Sending Candidate List----------------------------------------");
+//				System.out.println("----------------------------Sending Candidate List----------------------------------------");
 				ObjectOutputStream mapdos = new ObjectOutputStream(dos);
 				mapdos.writeObject(CandidateTable);
 				
 				//Semding packet 2 
-				System.out.println("----------------------------Sending Packet2----------------------------------------");
+//				System.out.println("----------------------------Sending Packet2----------------------------------------");
 				String packet2 = getmessagePacket2(VoterTable.get(VoterId).getUniqueId(), N1);
 				dos.writeUTF(packet2);
+				System.out.println("\n------------------------------Sent packet2---------------------------------");
 
 
 				// PACKET 3
 				
 				// receive packet 3
-				received = dis.readUTF(); 
-				
+				received = dis.readUTF();
+				System.out.println("\n----------------------------Receive Packet3-------------------------------");
+
 				//decrypting packet 3
 				String Msg = decryptAES(received, SharedKey);
 				msgList = Msg.split("\\s+");			//splits to a list of rsa encrypted packet, uid, dig sig and N2-1
 				String UID = msgList[1];
+//				System.out.println(msgList[1]);
 				Long N2_mod = Long.parseLong(msgList[3]);
 				//Check if nonce is correct
 				//getVoteCasted returns boolean for whether the corresponding UID has casted vote or not
 				//So if it returns true.. then socket should close
+//				System.out.println("Correct uptil here");
 				if ((VoterCheckTable.get(UID).getVoteCasted()) || (N2_mod != N2-1)){
-					System.out.println("Voter already voted");
-					System.out.println("Refusing this connection.");
+					System.out.println("\nVoter already voted");
+					System.out.println("\nRefusing this connection.");
 					this.s.close(); 
-					System.out.println("Connection closed"); 
-					break; 
+					System.out.println("\nConnection closed");
+//					break;
 				}
 
 				//else .. set Vote Casted to true
 				VoterCheckTable.get(UID).setVoteCasted();
-
-				System.out.println("-------------------- Printing all necessary values for Fatima --------------------------------");				
-				System.out.println("Data from the Voter:");
-				System.out.println(UID);
-				System.out.println(N2_mod);
-				System.out.println(msgList[0]);
-				System.out.println(msgList[2]);
+//				System.out.println("\n------------------------------Vote casted------------------------------------");
+//				System.out.println("-------------------- Printing all necessary values for Fatima --------------------------------");
+//				System.out.println("Data from the Voter:");
+//				System.out.println(UID);
+//				System.out.println(N2_mod);
+//				System.out.println(msgList[0]);
+				vote = msgList[0];
+//				System.out.println(msgList[2]);
 
 				//packet goes to S2. (FOR FATHIMA)
-				break;
 			} //ending try
 
-			catch (IOException e) { 
+			catch (Exception e) {
 				e.printStackTrace(); 
-			} catch(Exception e){
+			}
+
+			try
+			{
+				// closing resources
+				this.dis.close();
+				this.dos.close();
+
+			}
+			catch(IOException e){
 				e.printStackTrace();
 			}
-		}		//closing while 
 
-		
-		try
-		{ 
-			// closing resources 
-			this.dis.close(); 
-			this.dos.close(); 
-			
-		}
-		catch(IOException e){ 
-			e.printStackTrace(); 
-		} 
+			// All communication with S2 from here onwards
 
-		// All communication with S2 from here onwards
+			try
+			{
+				//Set up socket for connecting to S2
+				// getting localhost ip
+//				System.out.println("-----------------Begin Communication with S2-------------");
+				InetAddress ip_S2 = InetAddress.getByName("localhost");
+				// establish the connection with server port 1235
+				Socket s_S2 = new Socket(ip_S2, 1234);
+//				System.out.println("--------------------------Thread for S2--------------------------");
+				// obtaining input and out streams
+				DataInputStream dis_S2 = new DataInputStream(s_S2.getInputStream());
+				DataOutputStream dos_S2 = new DataOutputStream(s_S2.getOutputStream());
 
-		try
-		{
-			//Set up socket for connecting to S2
-			// getting localhost ip 
-			InetAddress ip_S2 = InetAddress.getByName("localhost");
-			// establish the connection with server port 1234
-			Socket s_S2 = new Socket(ip_S2, 1234);
-
-			// obtaining input and out streams 
-			DataInputStream dis_S2 = new DataInputStream(s_S2.getInputStream()); 
-			DataOutputStream dos_S2 = new DataOutputStream(s_S2.getOutputStream());
-
-			//set up communication with S2 in this block
-			while (true) 
-			{ 
+				//set up communication with S2 in this block
 				//send request to S2
-				dos_S2.writeUTF("send packet communication 4"); 
-			
+				long N3 = 34555;
+				String toSendtoS2 = EncryptionDecryptionAES.encrypt(vote+" "+Long.toString(N3),S1.getSecretKey());
+				dos_S2.writeUTF(toSendtoS2);
+				System.out.println("\n---------------------Sent Packet4---------------------");
+
 				//recieve response
-				received = dis_S2.readUTF(); 
-				System.out.println(received); 
+				received = dis_S2.readUTF();
+//				System.out.println(received);
 
-				// If S1 sends exit,close this connection 
-				// and then break from the while loop 
-				if(received.equals("Exit")) 
-				{ 
-					System.out.println("Closing this connection : " + s_S2); 
-					s_S2.close(); 
-					System.out.println("Connection closed"); 
-					break; 
-				} 
-				
-				// printing date or time as requested by client 
-				
-			} 
-			
-			// closing resources 
-			dis_S2.close(); 
-			dos_S2.close(); 
 
-		}catch(Exception e){ 
-			e.printStackTrace(); 
-		} 
+				if(Long.parseLong(received)+1 == N3)
+				{
+					System.out.println("\n---------------------Received Packet5---------------------");
+					dis_S2.close();
+					dos_S2.close();
+					s_S2.close();
+				}
+				else{
+					System.out.println("\n-----------------Received Packet5 with wrong nounce---------------");
+				}
+
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+
+//		}		//closing while
+
 	}	//end run() 
 
 
