@@ -32,9 +32,9 @@ import java.security.spec.X509EncodedKeySpec;
 // S1 class 
 public class S1
 { 
-	
+	//
 	private long N3 = 3724116239L;
-
+	//
 	//aes secret key
 	public static SecretKey getSecretKey(){
 		String keyStr = "012345678901234567890123456789XY";
@@ -42,7 +42,7 @@ public class S1
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		return secretKey;
 	}
-
+	//
 	public static void main(String[] args) throws IOException 
 	{ 
 		// S1 is listening on port 5056 for voter
@@ -81,8 +81,9 @@ public class S1
 		} 
 	} 
 } 
-
+//
 // ClientHandler class 
+//
 class VoterHandler extends Thread
 { 
 	//accessing voter table in the form of Hashmap and classes
@@ -117,7 +118,7 @@ class VoterHandler extends Thread
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-
+	//
 	// Constructor 
 	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos) 
 	{ 
@@ -126,7 +127,7 @@ class VoterHandler extends Thread
 		this.dos = dos; 
 	}
 
-
+	//
 	@Override
 	public void run() 
 	{ 
@@ -259,7 +260,7 @@ class VoterHandler extends Thread
 				String[] msgList = packet1.split("\\s+");
 				String VoterId = msgList[1];
 				long N1 = Long.parseLong(msgList[2]);
-
+		//		
 				//generates uniqueId
 				String uniqueID;
 //				System.out.println("-----------------------------------Generate UID----------------------------------");
@@ -298,6 +299,8 @@ class VoterHandler extends Thread
 
 				// PACKET 3
 				
+
+				
 				// receive packet 3
 				received = dis.readUTF();
 				System.out.println("\n----------------------------Receive Packet3-------------------------------");
@@ -319,7 +322,7 @@ class VoterHandler extends Thread
 					System.out.println("\nConnection closed");
 //					break;
 				}
-
+				//
 				//else .. set Vote Casted to true
 				VoterCheckTable.get(UID).setVoteCasted();
 //				System.out.println("\n------------------------------Vote casted------------------------------------");
@@ -333,7 +336,7 @@ class VoterHandler extends Thread
 
 				//packet goes to S2. (FOR FATHIMA)
 			} //ending try
-
+			//
 			catch (Exception e) {
 				e.printStackTrace(); 
 			}
@@ -350,9 +353,10 @@ class VoterHandler extends Thread
 			}
 
 			// All communication with S2 from here onwards
-
+			//
 			try
 			{
+
 				//Set up socket for connecting to S2
 				// getting localhost ip
 //				System.out.println("-----------------Begin Communication with S2-------------");
@@ -395,7 +399,7 @@ class VoterHandler extends Thread
 
 	}	//end run() 
 
-
+	//
 	//External Function
 
 	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
