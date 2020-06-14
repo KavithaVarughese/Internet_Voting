@@ -34,11 +34,14 @@ public class Webserver
 	public static void main(String[] args) throws IOException 
 	{ BigInteger clientKey =  new BigInteger("1");
 
+	  String VoterID = "";
+
+
 		try
 		{ 
 			
 			Scanner scn = new Scanner(System.in); 
-		
+				
 			// getting localhost ip 
 			InetAddress ip = InetAddress.getByName("localhost"); 
 	
@@ -59,15 +62,19 @@ public class Webserver
 
 				//System.out.println(res); 
 				//Diffie Hellman Exchange
-				if(res.equals("accepted"))
-				{
-					clientKey = DHClient.fetchClientKey(dis, dos);
-					//System.out.println(clientKey);
+				if(res.equals("rejected"))
+				{	
+					System.out.println("Please contact the Election Authority");
+					break;
+					
 				}
 				else
 				{
-					System.out.println("Please contact the Election Authority");
-					break;
+					VoterID = res.substring(8);
+					System.out.println(VoterID);
+					clientKey = DHClient.fetchClientKey(dis, dos);
+					//System.out.println(clientKey);
+					
 				}
 
 				System.out.println("--------------------------Diffie Hellman Complete----------------------------");
@@ -76,10 +83,10 @@ public class Webserver
 				//PACKET 1
 
 				// Voter starting communication with packet 1
-				System.out.println("Please enter your VoterID : B160779CS [This step is redundant ... Has to be removed]");
+				//System.out.println("Please enter your VoterID : B160779CS [This step is redundant ... Has to be removed]");
 
 				// Voter enters voter Id
-				String VoterID = scn.nextLine();
+				//String VoterID = scn.nextLine();
 				// Things to be discuessed with Ritika .. till here
 
 				//PACKET 1 and 2
@@ -277,7 +284,7 @@ public class Webserver
 		
 		byte[] decodedKey = Base64.getMimeDecoder().decode(key);
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-		System.out.println(secretKey);
+		//System.out.println(secretKey);
 		return secretKey;
 	} 
 

@@ -96,7 +96,9 @@ public class Login
 						dos.writeUTF(otp);
 		                String result = dis.readUTF();
 						if(result.equals("accepted"))
-							return "accepted";
+						{
+							String res = "accepted" + name;	
+							return res;}
 						else
 							return "rejected";
 					}
