@@ -7,7 +7,6 @@ import java.util.*;
 import java.net.*; 
 import java.security.*;
 import java.lang.*;
-import java.math.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -68,9 +67,8 @@ public class S1
 				
 //				System.out.println("Assigning new thread for this voter");
 
-
 				// create a new thread object 
-				Thread t = new VoterHandler(s, dis, dos, temp1, temp2,VoterCheckTable ); 
+				Thread t = new VoterHandler(s, dis, dos); 
 
 				// Invoking the start() method 
 				t.start(); 
@@ -88,15 +86,21 @@ public class S1
 class VoterHandler extends Thread
 { 
 	//accessing voter table in the form of Hashmap and classes
-	
+	VoterData temp1 = new VoterData();
+	public HashMap<String, VoterInfo> VoterTable = temp1.getVoterTable();
+
+	//accessing Candidate table
+	CandidateData temp2 = new CandidateData();
+	public HashMap<String, String> CandidateTable = temp2.getCandidateTable();
+
+	//create empty VoterCheck Table
+	public static HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>(); 
+
 	//socket connection variables
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s;
-	final VoterData temp1;
-	final CandidateData temp2 ;
-	final HashMap<String, VoterCheck> VoterCheckTable;
-	
+
 	// For AES Encryption
 	static Cipher cipher;
 
@@ -115,23 +119,17 @@ class VoterHandler extends Thread
 
 
 	// Constructor 
-	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos, VoterData temp1, CandidateData temp2, HashMap<String, VoterCheck> VoterCheckTable ) 
+	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos) 
 	{ 
 		this.s = s; 
 		this.dis = dis; 
 		this.dos = dos; 
-		this.temp1 = temp1;
-		this.temp2 = temp2;
-		this.VoterCheckTable = VoterCheckTable;
 	}
 
-	
-	
+
 	@Override
 	public void run() 
 	{ 
-		HashMap<String, VoterInfo> VoterTable= temp1.getVoterTable();
-		HashMap<String, String> CandidateTable = temp2.getCandidateTable();
 		//socket communication buffer strings
 		String received; 
 		String toreturn;
@@ -143,7 +141,7 @@ class VoterHandler extends Thread
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//Server Shared key
-		BigInteger serverKey;
+		Integer serverKey;
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -167,24 +165,7 @@ class VoterHandler extends Thread
 					// receive VoterId
 					Username = dis.readUTF();
 					System.out.println("Recieved VoterId : " + Username);
-					if(VoterTable.get(Username).getUidAssigned())
-					{
-						dos.writeUTF(rejected);
-						dos.flush();
-						try
-						{ 
-							// closing resources 
-							this.s.close();
-							this.dis.close(); 
-							this.dos.close();
-							System.out.println("Connection");
-							break; 
-			
-						}
-						catch(IOException e){ 
-							e.printStackTrace(); 
-						}
-					}
+					
 					//Taking Salt from database and converting to bytes
 					String salttemp = VoterTable.get(Username).getSalt();
 					byte[] salt = salttemp.getBytes();
@@ -196,7 +177,7 @@ class VoterHandler extends Thread
 					String salt1 = Base64.getEncoder().encodeToString(salt);
 					String message = "----------------------------Sending Salt----------------------------------------";
 					System.out.println(message);
-					dos.writeUTF(message);
+
 					//sending encoded salt
 					dos.flush();
 					dos.writeUTF(salt1);
