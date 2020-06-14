@@ -33,17 +33,8 @@ import java.security.spec.X509EncodedKeySpec;
 // S1 class 
 public class S1
 { 
-	//
+	
 	private long N3 = 3724116239L;
-	//
-	//aes secret key
-	public static SecretKey getSecretKeyS2(){
-		String keyStr = "012345678901234567890123456789XY";
-		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
-		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-		return secretKey;
-	}
-	//
 
 	public static void main(String[] args) throws IOException 
 	{ 
@@ -61,14 +52,24 @@ public class S1
 				// socket object to receive incoming voter requests 
 				s = ss.accept(); 
 				
-				//System.out.println("A new voter is connected : " + s); 
+				System.out.println("A new voter is connected : " + s); 
 				
 				// obtaining input and output streams 
 				DataInputStream dis = new DataInputStream(s.getInputStream()); 
 				DataOutputStream dos = new DataOutputStream(s.getOutputStream()); 
+				VoterData temp1 = new VoterData();
+	
+
+				//accessing Candidate table
+					CandidateData temp2 = new CandidateData();
+	
+	//create empty VoterCheck Table
+				HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>(); 
+
+				System.out.println("Assigning new thread for this voter"); 
 
 				// create a new thread object 
-				Thread t = new VoterHandler(s, dis, dos); 
+				Thread t = new VoterHandler(s, dis, dos, temp1, temp2,VoterCheckTable ); 
 
 				// Invoking the start() method 
 				t.start(); 
@@ -81,26 +82,19 @@ public class S1
 		} 
 	} 
 } 
-//
+
 // ClientHandler class 
-//
 class VoterHandler extends Thread
 { 
 	//accessing voter table in the form of Hashmap and classes
-	VoterData temp1 = new VoterData();
-	public HashMap<String, VoterInfo> VoterTable = temp1.getVoterTable();
-
-	//accessing Candidate table
-	CandidateData temp2 = new CandidateData();
-	public HashMap<String, String> CandidateTable = temp2.getCandidateTable();
-
-	//create empty VoterCheck Table
-	public static HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>();
 	
 	//socket connection variables
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s;
+	final VoterData temp1;
+	final CandidateData temp2 ;
+	final HashMap<String, VoterCheck> VoterCheckTable;
 	
 	//Server Shared Key
 	//private BigInteger serverKey;
@@ -117,27 +111,33 @@ class VoterHandler extends Thread
 	
 	
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	//private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
+	private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-	//
+
 	// Constructor 
-	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos) 
+	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos, VoterData temp1, CandidateData temp2, HashMap<String, VoterCheck> VoterCheckTable ) 
 	{ 
 		this.s = s; 
 		this.dis = dis; 
 		this.dos = dos; 
+		this.temp1 = temp1;
+		this.temp2 = temp2;
+		this.VoterCheckTable = VoterCheckTable;
 	}
 
+	
+	
 	@Override
 	public void run() 
 	{ 
 		BigInteger serverKey = new BigInteger("1");
+		HashMap<String, VoterInfo> VoterTable= temp1.getVoterTable();
+		HashMap<String, String> CandidateTable = temp2.getCandidateTable();
 		//socket communication buffer strings
 		String received; 
 		String toreturn; 
-		String vote = new String();
 		
 		//authentication strings
 		String accepted = "accepted";
@@ -150,8 +150,8 @@ class VoterHandler extends Thread
 
 
 		//All communication with voter in this block
-//		while(true) 
-//		{ 
+		while(true) 
+		{ 
 			//Initialize Username .. useful later on in program
 			String Username = "";
 
@@ -273,7 +273,7 @@ class VoterHandler extends Thread
 				//PACKET 1 and 2
 				// receive packet 1
 				received = dis.readUTF(); 
-				System.out.println("\n----------------------------Receive Packet1-------------------------------");
+				
 
 				SecretKey SharedKey = getSecretKey(serverKey);
 				//decrypts the packet 1
@@ -281,24 +281,21 @@ class VoterHandler extends Thread
 				String[] msgList = packet1.split("\\s+");
 				String VoterId = msgList[1];
 				long N1 = Long.parseLong(msgList[2]);
-		//		
+
 				//generates uniqueId
 				String uniqueID;
-				System.out.println("-----------------------------------Generate UID----------------------------------");
 				if(!VoterTable.get(VoterId).getUidAssigned())
 				{
 					do
 					{
 						//get random uniqueID
 						uniqueID = getAlphaNumericString(10);
-//						System.out.println("----------------------------------------"+uniqueID+"--------------------------------");
 						//assign if uniqueID is unique
 						if(!VoterCheckTable.containsKey(uniqueID))
 						{
 							VoterCheck voter = new VoterCheck(VoterId,uniqueID);
 							VoterCheckTable.put(uniqueID, voter);
 							VoterTable.get(VoterId).changeUidAssigned();
-//							System.out.println("-------------------------------UID created---------------------------------");
 							VoterTable.get(VoterId).setUniqueId(uniqueID);
 							break;
 						}
@@ -307,7 +304,7 @@ class VoterHandler extends Thread
 
 
 				//sending candidate list as an hashmap object to Webserver
-				//System.out.println("----------------------------Sending Candidate List----------------------------------------");
+				System.out.println("----------------------------Sending Candidate List----------------------------------------");
 				ObjectOutputStream mapdos = new ObjectOutputStream(dos);
 				mapdos.writeObject(CandidateTable);
 				
@@ -319,12 +316,9 @@ class VoterHandler extends Thread
 
 				// PACKET 3
 				
-
-				
 				// receive packet 3
 				received = dis.readUTF(); 
-				System.out.println("\n----------------------------Receive Packet3-------------------------------");
-
+				
 				//decrypting packet 3
 				String Msg = decryptAES(received, SharedKey);
 				msgList = Msg.split("\\s+");			//splits to a list of rsa encrypted packet, uid, dig sig and N2-1
@@ -338,28 +332,29 @@ class VoterHandler extends Thread
 					System.out.println("Refusing this connection.");
 					this.s.close(); 
 					System.out.println("Connection closed"); 
-					//break; 
+					break; 
 				}
-				//
+
 				//else .. set Vote Casted to true
 				VoterCheckTable.get(UID).setVoteCasted();
 
-				// System.out.println("-------------------- Printing all necessary values for Fatima --------------------------------");				
-				// System.out.println("Data from the Voter:");
-				// System.out.println(UID);
-				// System.out.println(N2_mod);
-				// System.out.println(msgList[0]);
-				// System.out.println(msgList[2]);
-				vote = msgList[0];
+				System.out.println("-------------------- Printing all necessary values for Fatima --------------------------------");				
+				System.out.println("Data from the Voter:");
+				System.out.println(UID);
+				System.out.println(N2_mod);
+				System.out.println(msgList[0]);
+				System.out.println(msgList[2]);
 
 				//packet goes to S2. (FOR FATHIMA)
-//				break;
-			} catch (IOException e) { 
+				break;
+			} //ending try
+
+			catch (IOException e) { 
 				e.printStackTrace(); 
 			} catch(Exception e){
 				e.printStackTrace();
 			}
-//		}		//closing while 
+		}		//closing while 
 
 		
 		try
@@ -368,56 +363,59 @@ class VoterHandler extends Thread
 			this.dis.close(); 
 			this.dos.close(); 
 			
-		}catch(IOException e){ 
+		}
+		catch(IOException e){ 
 			e.printStackTrace(); 
 		} 
 
+		// All communication with S2 from here onwards
 
-			// All communication with S2 from here onwards
-			//
-			try
-			{
+		try
+		{
+			//Set up socket for connecting to S2
+			// getting localhost ip 
+			InetAddress ip_S2 = InetAddress.getByName("localhost");
+			// establish the connection with server port 1234
+			Socket s_S2 = new Socket(ip_S2, 1234);
 
-				//Set up socket for connecting to S2
-				// getting localhost ip
-//				System.out.println("-----------------Begin Communication with S2-------------");
-				InetAddress ip_S2 = InetAddress.getByName("localhost");
-				// establish the connection with server port 1235
-				Socket s_S2 = new Socket(ip_S2, 1234);
-//				System.out.println("--------------------------Thread for S2--------------------------");
-				// obtaining input and out streams
-				DataInputStream dis_S2 = new DataInputStream(s_S2.getInputStream());
-				DataOutputStream dos_S2 = new DataOutputStream(s_S2.getOutputStream());
-				//set up communication with S2 in this block
+			// obtaining input and out streams 
+			DataInputStream dis_S2 = new DataInputStream(s_S2.getInputStream()); 
+			DataOutputStream dos_S2 = new DataOutputStream(s_S2.getOutputStream());
+
+			//set up communication with S2 in this block
+			while (true) 
+			{ 
 				//send request to S2
-
-				long N3 = 34555;
-				String toSendtoS2 = EncryptionDecryptionAES.encrypt(vote+" "+Long.toString(N3),S1.getSecretKeyS2());
-				dos_S2.writeUTF(toSendtoS2);
-				System.out.println("\n---------------------Sent Packet4---------------------");
-
+				dos_S2.writeUTF("send packet communication 4"); 
+			
 				//recieve response
-				received = dis_S2.readUTF();
-//				System.out.println(received);
+				received = dis_S2.readUTF(); 
+				System.out.println(received); 
 
-
-				if(Long.parseLong(received)+1 == N3)
-				{
-					System.out.println("\n---------------------Received Packet5---------------------");
-					dis_S2.close();
-					dos_S2.close();
-					s_S2.close();
-				}
-				else{
-					System.out.println("\n-----------------Received Packet5 with wrong nounce---------------");
-				}
+				// If S1 sends exit,close this connection 
+				// and then break from the while loop 
+				if(received.equals("Exit")) 
+				{ 
+					System.out.println("Closing this connection : " + s_S2); 
+					s_S2.close(); 
+					System.out.println("Connection closed"); 
+					break; 
+				} 
 				
-			}catch(Exception e){ 
-				e.printStackTrace(); 
+				// printing date or time as requested by client 
+				
 			} 
-	}		//end run() 
+			
+			// closing resources 
+			dis_S2.close(); 
+			dos_S2.close(); 
 
-	//
+		}catch(Exception e){ 
+			e.printStackTrace(); 
+		} 
+	}	//end run() 
+
+
 	//External Function
 
 	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
