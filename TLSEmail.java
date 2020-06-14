@@ -32,6 +32,38 @@ public class TLSEmail {
 	   Port for TLS/STARTTLS: 587
 
 	 */
+	private static void sendEmail(Session session, String toEmail, String subject, String body)
+	{
+	    try
+	    {
+	      MimeMessage msg = new MimeMessage(session);
+	      //set message headers
+	      msg.addHeader("Content-type", "text/HTML; charset=UTF-8");
+	      msg.addHeader("format", "flowed");
+	      msg.addHeader("Content-Transfer-Encoding", "8bit");
+
+	      msg.setFrom(new InternetAddress("server1csec@gmail.com", "Please Don't Reply"));
+
+	      msg.setReplyTo(InternetAddress.parse("server1csec@gmail.com", false));
+
+	      msg.setSubject(subject, "UTF-8");
+
+	      msg.setText(body, "UTF-8");
+
+	      msg.setSentDate(new Date());
+
+	      msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail, false));
+	      System.out.println("Message is ready");
+    	      Transport.send(msg);  
+
+	      System.out.println("Email Sent Successfully!!");
+	    }
+	    catch (Exception e) {
+	      e.printStackTrace();
+	    }
+
+	}
+
 	private static String sendMail(String toEmail)
 	{
 		try{
@@ -60,7 +92,7 @@ public class TLSEmail {
 		final String r = ""+ rand1;
 		Session session = Session.getInstance(props, auth);
 	
-                EmailUtil.sendEmail(session, toEmail,"Your OTP for verification", r);
+                sendEmail(session, toEmail,"Your OTP for verification", r);
                
                 return r;
 	} catch (Exception e) {

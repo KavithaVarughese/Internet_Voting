@@ -68,6 +68,7 @@ public class S1
 
 				System.out.println("Assigning new thread for this voter"); 
 
+
 				// create a new thread object 
 				Thread t = new VoterHandler(s, dis, dos, temp1, temp2,VoterCheckTable ); 
 
@@ -96,8 +97,10 @@ class VoterHandler extends Thread
 	final CandidateData temp2 ;
 	final HashMap<String, VoterCheck> VoterCheckTable;
 	
+
 	//Server Shared Key
 	//private BigInteger serverKey;
+
 
 	// For AES Encryption
 	static Cipher cipher;
@@ -133,6 +136,7 @@ class VoterHandler extends Thread
 	public void run() 
 	{ 
 		BigInteger serverKey = new BigInteger("1");
+
 		HashMap<String, VoterInfo> VoterTable= temp1.getVoterTable();
 		HashMap<String, String> CandidateTable = temp2.getCandidateTable();
 		//socket communication buffer strings
@@ -145,7 +149,6 @@ class VoterHandler extends Thread
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//Server Shared key
-		
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 

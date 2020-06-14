@@ -36,7 +36,6 @@ public class Webserver
 	{ BigInteger clientKey =  new BigInteger("1");
 		try
 		{ 
-			
 			Scanner scn = new Scanner(System.in); 
 		
 			// getting localhost ip 
