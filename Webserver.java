@@ -16,7 +16,6 @@ import java.io.*;
 import java.text.*; 
 import java.util.*; 
 import java.net.*; 
-import java.math.*;
 import java.util.Scanner; 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -35,7 +34,7 @@ public class Webserver
 	{ 
 		try
 		{ 
-			BigInteger clientKey;
+			Integer clientKey;
 			Scanner scn = new Scanner(System.in); 
 		
 			// getting localhost ip 
