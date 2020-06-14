@@ -21,8 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 // Client class 
 public class Webserver
-{ 	
-
+{
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
 	private static long N1 = 5497326541L;
 
@@ -87,9 +86,9 @@ public class Webserver
 				String packet1 = getmessagePacket1(VoterID);
 				 
 
-				//Packet 1 sent to S1 
-				System.out.println("----------------------------Sending packet 1----------------------------------------");
-				dos.writeUTF(packet1); 
+				//Packet 1 sent to S1
+				dos.writeUTF(packet1);
+				System.out.println("\n----------------------------Sent Packet1-----------------------------");
 
 				//recieve the candidate table in the form of a hash
 				// Hash map Form :
@@ -116,10 +115,11 @@ public class Webserver
 				}while(true);
 				
 				// recieving packet 2
-				String received = dis.readUTF(); 
+				String received = dis.readUTF();
+				System.out.println("\n----------------------------Received Packet2------------------------------");
 				
 				//decrypts the packet 2
-				String packet2 = decryptAES(received, SharedKey);
+				String packet2 = EncryptionDecryptionAES.decrypt(received, SharedKey);
 				String[] msgList = packet2.split("\\s+");
 				String UID = msgList[0];
 				long N1_mod = Long.parseLong(msgList[1]);
@@ -137,10 +137,9 @@ public class Webserver
 				//PACKET 3
 
 				// sending packet 3
-				System.out.println("----------------------------Sending Packet3----------------------------------------");
 				String tosend = getmessagePacket3(CID, secret, UID, N2);
 				dos.writeUTF(tosend);
-				
+				System.out.println("\n----------------------------Sent Packet3-------------------------------");
 				break;
 				
 			} 
@@ -160,11 +159,14 @@ public class Webserver
 	public static String getmessagePacket3(String CID, String secret, String UID, long N2) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
 	{													//mod fn header here if changing the key
 		String Msg = "";
+		String Msgpart = "";
 		try{
 			Msg = CID + " " + secret;
-			Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + UID;
+			Msgpart = Base64.getEncoder().encodeToString(rsa.encrypt(Msg, publicKey));
+			Msg =  Msgpart+ " " + UID;
+//			System.out.println("\ncid and secret encrypted is "+ Msgpart);
 			N2 = N2 - 1;
-			Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Long.toString(N2), SharedKey);
+			Msg = EncryptionDecryptionAES.encrypt(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Long.toString(N2), SharedKey);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -188,11 +190,11 @@ public class Webserver
         return publicKey;
     }
 
-	public static byte[] encryptRSA(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyRSA(publicKey));
-        return cipher.doFinal(data.getBytes());
-    }
+//	public static byte[] encryptRSA(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
+//        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+//        cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyRSA(publicKey));
+//        return cipher.doFinal(data.getBytes());
+//    }
 
     public static byte[] digSignatureRSA(String Msg) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, SignatureException{
     	KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("DSA");
@@ -228,7 +230,7 @@ public class Webserver
 		try
 		{
 			String msg = "I_want_to_vote";
-			packet = encryptAES(msg + " " + VoterID + " " + Long.toString(N1), SharedKey);
+			packet = EncryptionDecryptionAES.encrypt(msg + " " + VoterID + " " + Long.toString(N1), SharedKey);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -236,27 +238,27 @@ public class Webserver
 		return packet;
 	}
 
-	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
-	{
-		cipher = Cipher.getInstance("AES");
-		byte[] plainTextByte = plainText.getBytes();
-		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-		byte[] encryptedByte = cipher.doFinal(plainTextByte);
-		Base64.Encoder encoder = Base64.getEncoder();
-		String encryptedText = encoder.encodeToString(encryptedByte);
-		return encryptedText;
-	}
-
-	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
-	{
-		cipher = Cipher.getInstance("AES");
-		Base64.Decoder decoder = Base64.getDecoder();
-		byte[] encryptedTextByte = decoder.decode(encryptedText);
-		cipher.init(Cipher.DECRYPT_MODE, secretKey);
-		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
-		String decryptedText = new String(decryptedByte);
-		return decryptedText;
-	}
+//	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception
+//	{
+//		cipher = Cipher.getInstance("AES");
+//		byte[] plainTextByte = plainText.getBytes();
+//		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+//		byte[] encryptedByte = cipher.doFinal(plainTextByte);
+//		Base64.Encoder encoder = Base64.getEncoder();
+//		String encryptedText = encoder.encodeToString(encryptedByte);
+//		return encryptedText;
+//	}
+//
+//	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception
+//	{
+//		cipher = Cipher.getInstance("AES");
+//		Base64.Decoder decoder = Base64.getDecoder();
+//		byte[] encryptedTextByte = decoder.decode(encryptedText);
+//		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+//		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+//		String decryptedText = new String(decryptedByte);
+//		return decryptedText;
+//	}
 	public static SecretKey getSecretKey(){
 		String keyStr = "012345678901234567890123456789XY";
 		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
