@@ -7,6 +7,7 @@ import java.util.*;
 import java.net.*; 
 import java.security.*;
 import java.lang.*;
+import java.math.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -36,13 +37,14 @@ public class S1
 	private long N3 = 3724116239L;
 	//
 	//aes secret key
-	public static SecretKey getSecretKey(){
+	public static SecretKey getSecretKeyS2(){
 		String keyStr = "012345678901234567890123456789XY";
 		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		return secretKey;
 	}
 	//
+
 	public static void main(String[] args) throws IOException 
 	{ 
 		// S1 is listening on port 5056 for voter
@@ -59,13 +61,11 @@ public class S1
 				// socket object to receive incoming voter requests 
 				s = ss.accept(); 
 				
-//				System.out.println("A new voter is connected : " + s);
+				//System.out.println("A new voter is connected : " + s); 
 				
 				// obtaining input and output streams 
 				DataInputStream dis = new DataInputStream(s.getInputStream()); 
 				DataOutputStream dos = new DataOutputStream(s.getOutputStream()); 
-				
-//				System.out.println("Assigning new thread for this voter");
 
 				// create a new thread object 
 				Thread t = new VoterHandler(s, dis, dos); 
@@ -95,12 +95,15 @@ class VoterHandler extends Thread
 	public HashMap<String, String> CandidateTable = temp2.getCandidateTable();
 
 	//create empty VoterCheck Table
-	public static HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>(); 
-
+	public static HashMap<String, VoterCheck> VoterCheckTable= new HashMap<String, VoterCheck>();
+	
 	//socket connection variables
 	final DataInputStream dis; 
 	final DataOutputStream dos; 
 	final Socket s;
+	
+	//Server Shared Key
+	//private BigInteger serverKey;
 
 	// For AES Encryption
 	static Cipher cipher;
@@ -109,12 +112,12 @@ class VoterHandler extends Thread
 	private long N2 = 3725678901L;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	private static SecretKey SharedKey = getSecretKey();		//datatype needs to be created (for KAVITHA)
+	//private static SecretKey SharedKey;// = getSecretKey();		//datatype needs to be created (for KAVITHA)
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
 	
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
+	//private static Set<Integer> voterLst = new HashSet<Integer>();		//voterlist stored as an unordered set of UIDs
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -127,13 +130,13 @@ class VoterHandler extends Thread
 		this.dos = dos; 
 	}
 
-	//
 	@Override
 	public void run() 
 	{ 
+		BigInteger serverKey = new BigInteger("1");
 		//socket communication buffer strings
 		String received; 
-		String toreturn;
+		String toreturn; 
 		String vote = new String();
 		
 		//authentication strings
@@ -142,17 +145,17 @@ class VoterHandler extends Thread
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//Server Shared key
-		Integer serverKey;
+		
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 		//All communication with voter in this block
-//		while(true)
-//		{
+//		while(true) 
+//		{ 
 			//Initialize Username .. useful later on in program
 			String Username = "";
 
-			try {
+			try { 
 				
 				//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
 				//Functions for salt functionality
@@ -166,7 +169,24 @@ class VoterHandler extends Thread
 					// receive VoterId
 					Username = dis.readUTF();
 					System.out.println("Recieved VoterId : " + Username);
-					
+					if(VoterTable.get(Username).getUidAssigned())
+					{
+						dos.writeUTF(rejected);
+						dos.flush();
+						try
+						{ 
+							// closing resources 
+							this.s.close();
+							this.dis.close(); 
+							this.dos.close();
+							System.out.println("Connection");
+							break; 
+			
+						}
+						catch(IOException e){ 
+							e.printStackTrace(); 
+						}
+					}
 					//Taking Salt from database and converting to bytes
 					String salttemp = VoterTable.get(Username).getSalt();
 					byte[] salt = salttemp.getBytes();
@@ -178,7 +198,7 @@ class VoterHandler extends Thread
 					String salt1 = Base64.getEncoder().encodeToString(salt);
 					String message = "----------------------------Sending Salt----------------------------------------";
 					System.out.println(message);
-
+					dos.writeUTF(message);
 					//sending encoded salt
 					dos.flush();
 					dos.writeUTF(salt1);
@@ -233,7 +253,7 @@ class VoterHandler extends Thread
 					String otp = dis.readUTF();
 					if(otp.equals(check))
 					{
-						System.out.println("\n----------------------------Sending Acceptance----------------------------------------");
+						System.out.println("----------------------------Sending Acceptance----------------------------------------");
 						dos.writeUTF(accepted);
 						dos.flush();
 						serverKey = DHServer.fetchServerKey(dis,dos);
@@ -241,20 +261,21 @@ class VoterHandler extends Thread
 					}
 					else
 					{
-						System.out.println("\n----------------------------Rejecting----------------------------------------");
+						System.out.println("----------------------------Rejecting----------------------------------------");
 						dos.writeUTF(rejected);
 						dos.flush();
 					}
 				}
 				
-				System.out.println("\n--------------------------Diffie Hellman Complete----------------------------");
+				System.out.println("--------------------------Diffie Hellman Complete----------------------------");
 
 
 				//PACKET 1 and 2
 				// receive packet 1
-				received = dis.readUTF();
+				received = dis.readUTF(); 
 				System.out.println("\n----------------------------Receive Packet1-------------------------------");
 
+				SecretKey SharedKey = getSecretKey(serverKey);
 				//decrypts the packet 1
 				String packet1 = decryptAES(received, SharedKey);
 				String[] msgList = packet1.split("\\s+");
@@ -263,7 +284,7 @@ class VoterHandler extends Thread
 		//		
 				//generates uniqueId
 				String uniqueID;
-//				System.out.println("-----------------------------------Generate UID----------------------------------");
+				System.out.println("-----------------------------------Generate UID----------------------------------");
 				if(!VoterTable.get(VoterId).getUidAssigned())
 				{
 					do
@@ -286,15 +307,14 @@ class VoterHandler extends Thread
 
 
 				//sending candidate list as an hashmap object to Webserver
-//				System.out.println("----------------------------Sending Candidate List----------------------------------------");
+				//System.out.println("----------------------------Sending Candidate List----------------------------------------");
 				ObjectOutputStream mapdos = new ObjectOutputStream(dos);
 				mapdos.writeObject(CandidateTable);
 				
 				//Semding packet 2 
-//				System.out.println("----------------------------Sending Packet2----------------------------------------");
-				String packet2 = getmessagePacket2(VoterTable.get(VoterId).getUniqueId(), N1);
+				System.out.println("----------------------------Sending Packet2----------------------------------------");
+				String packet2 = getmessagePacket2(VoterTable.get(VoterId).getUniqueId(), N1, SharedKey);
 				dos.writeUTF(packet2);
-				System.out.println("\n------------------------------Sent packet2---------------------------------");
 
 
 				// PACKET 3
@@ -302,55 +322,56 @@ class VoterHandler extends Thread
 
 				
 				// receive packet 3
-				received = dis.readUTF();
+				received = dis.readUTF(); 
 				System.out.println("\n----------------------------Receive Packet3-------------------------------");
 
 				//decrypting packet 3
 				String Msg = decryptAES(received, SharedKey);
 				msgList = Msg.split("\\s+");			//splits to a list of rsa encrypted packet, uid, dig sig and N2-1
 				String UID = msgList[1];
-//				System.out.println(msgList[1]);
 				Long N2_mod = Long.parseLong(msgList[3]);
 				//Check if nonce is correct
 				//getVoteCasted returns boolean for whether the corresponding UID has casted vote or not
 				//So if it returns true.. then socket should close
-//				System.out.println("Correct uptil here");
 				if ((VoterCheckTable.get(UID).getVoteCasted()) || (N2_mod != N2-1)){
-					System.out.println("\nVoter already voted");
-					System.out.println("\nRefusing this connection.");
+					System.out.println("Voter already voted");
+					System.out.println("Refusing this connection.");
 					this.s.close(); 
-					System.out.println("\nConnection closed");
-//					break;
+					System.out.println("Connection closed"); 
+					//break; 
 				}
 				//
 				//else .. set Vote Casted to true
 				VoterCheckTable.get(UID).setVoteCasted();
-//				System.out.println("\n------------------------------Vote casted------------------------------------");
-//				System.out.println("-------------------- Printing all necessary values for Fatima --------------------------------");
-//				System.out.println("Data from the Voter:");
-//				System.out.println(UID);
-//				System.out.println(N2_mod);
-//				System.out.println(msgList[0]);
+
+				// System.out.println("-------------------- Printing all necessary values for Fatima --------------------------------");				
+				// System.out.println("Data from the Voter:");
+				// System.out.println(UID);
+				// System.out.println(N2_mod);
+				// System.out.println(msgList[0]);
+				// System.out.println(msgList[2]);
 				vote = msgList[0];
-//				System.out.println(msgList[2]);
 
 				//packet goes to S2. (FOR FATHIMA)
-			} //ending try
-			//
-			catch (Exception e) {
+//				break;
+			} catch (IOException e) { 
 				e.printStackTrace(); 
-			}
-
-			try
-			{
-				// closing resources
-				this.dis.close();
-				this.dos.close();
-
-			}
-			catch(IOException e){
+			} catch(Exception e){
 				e.printStackTrace();
 			}
+//		}		//closing while 
+
+		
+		try
+		{ 
+			// closing resources 
+			this.dis.close(); 
+			this.dos.close(); 
+			
+		}catch(IOException e){ 
+			e.printStackTrace(); 
+		} 
+
 
 			// All communication with S2 from here onwards
 			//
@@ -367,11 +388,11 @@ class VoterHandler extends Thread
 				// obtaining input and out streams
 				DataInputStream dis_S2 = new DataInputStream(s_S2.getInputStream());
 				DataOutputStream dos_S2 = new DataOutputStream(s_S2.getOutputStream());
-
 				//set up communication with S2 in this block
 				//send request to S2
+
 				long N3 = 34555;
-				String toSendtoS2 = EncryptionDecryptionAES.encrypt(vote+" "+Long.toString(N3),S1.getSecretKey());
+				String toSendtoS2 = EncryptionDecryptionAES.encrypt(vote+" "+Long.toString(N3),S1.getSecretKeyS2());
 				dos_S2.writeUTF(toSendtoS2);
 				System.out.println("\n---------------------Sent Packet4---------------------");
 
@@ -390,14 +411,11 @@ class VoterHandler extends Thread
 				else{
 					System.out.println("\n-----------------Received Packet5 with wrong nounce---------------");
 				}
-
-			}catch(Exception e){
-				e.printStackTrace();
-			}
-
-//		}		//closing while
-
-	}	//end run() 
+				
+			}catch(Exception e){ 
+				e.printStackTrace(); 
+			} 
+	}		//end run() 
 
 	//
 	//External Function
@@ -451,13 +469,25 @@ class VoterHandler extends Thread
         return sb.toString(); 
 	}
 	
-	public static SecretKey getSecretKey(){
+	public static SecretKey getSecretKey(BigInteger serverKey){
+		String key = serverKey.toString();
+		int length = key.length();
+		int i = 0;
 		String keyStr = "012345678901234567890123456789XY";
-		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
+		for(i= length; i < keyStr.length();i++)
+		{
+			char x = keyStr.charAt(i);
+			key = key + String.valueOf(x);
+		}
+		
+		//String keyStr = "012345678901234567890123456789XY";
+		byte[] decodedKey = Base64.getMimeDecoder().decode(key);
+		
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		System.out.println(secretKey);
 		return secretKey;
 	}
-	public static String getmessagePacket2(String uniqueID, long N1) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	public static String getmessagePacket2(String uniqueID, long N1, SecretKey SharedKey) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
 	{
 		long N2 = 3725678901L;
 		String packet = "";

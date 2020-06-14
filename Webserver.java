@@ -16,29 +16,27 @@ import java.io.*;
 import java.text.*; 
 import java.util.*; 
 import java.net.*; 
+import java.math.*;
 import java.util.Scanner; 
 import javax.crypto.spec.SecretKeySpec;
 
 // Client class 
 public class Webserver
 {
-
-
-
-	
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
 	private static long N1 = 5497326541L;
-
+	
 	//Necessities for AES Encryption
 	static Cipher cipher;
-	private static SecretKey SharedKey = getSecretKey();				//datatype to be created (for KAVITHA)
+	//private static SecretKey SharedKey;// = getSecretKey();				//datatype to be created (for KAVITHA)
 
 
 	public static void main(String[] args) throws IOException 
-	{ 
+	{ BigInteger clientKey =  new BigInteger("1");
+
 		try
 		{ 
-			Integer clientKey;
+			
 			Scanner scn = new Scanner(System.in); 
 		
 			// getting localhost ip 
@@ -74,7 +72,7 @@ public class Webserver
 
 				System.out.println("--------------------------Diffie Hellman Complete----------------------------");
 
-
+				SecretKey SharedKey = getSecretKey(clientKey);
 				//PACKET 1
 
 				// Voter starting communication with packet 1
@@ -87,12 +85,12 @@ public class Webserver
 				//PACKET 1 and 2
 
 				//Packet 1 generation
-				String packet1 = getmessagePacket1(VoterID);
+				String packet1 = getmessagePacket1(VoterID, SharedKey);
 				 
 
-				//Packet 1 sent to S1
-				dos.writeUTF(packet1);
-				System.out.println("\n----------------------------Sent Packet1-----------------------------");
+				//Packet 1 sent to S1 
+				System.out.println("----------------------------Sending packet 1----------------------------------------");
+				dos.writeUTF(packet1); 
 
 				//recieve the candidate table in the form of a hash
 				// Hash map Form :
@@ -119,9 +117,10 @@ public class Webserver
 				}while(true);
 				
 				// recieving packet 2
-				String received = dis.readUTF();
+				String received = dis.readUTF(); 
 				System.out.println("\n----------------------------Received Packet2------------------------------");
-				
+
+				//SecretKey SharedKey = getSecretKey(clientKey);
 				//decrypts the packet 2
 				String packet2 = EncryptionDecryptionAES.decrypt(received, SharedKey);
 				String[] msgList = packet2.split("\\s+");
@@ -141,9 +140,10 @@ public class Webserver
 				//PACKET 3
 
 				// sending packet 3
-				String tosend = getmessagePacket3(CID, secret, UID, N2);
+				System.out.println("----------------------------Sending Packet3----------------------------------------");
+				String tosend = getmessagePacket3(CID, secret, UID, N2, SharedKey);
 				dos.writeUTF(tosend);
-				System.out.println("\n----------------------------Sent Packet3-------------------------------");
+				
 				break;
 				
 			} 
@@ -160,7 +160,7 @@ public class Webserver
 
 	//External Functions .....
 
-	public static String getmessagePacket3(String CID, String secret, String UID, long N2) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	public static String getmessagePacket3(String CID, String secret, String UID, long N2, SecretKey SharedKey) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
 	{													//mod fn header here if changing the key
 		String Msg = "";
 		String Msgpart = "";
@@ -194,11 +194,11 @@ public class Webserver
         return publicKey;
     }
 
-//	public static byte[] encryptRSA(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-//        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-//        cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyRSA(publicKey));
-//        return cipher.doFinal(data.getBytes());
-//    }
+	// public static byte[] encryptRSA(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
+    //     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    //     cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyRSA(publicKey));
+    //     return cipher.doFinal(data.getBytes());
+    // }
 
     public static byte[] digSignatureRSA(String Msg) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, SignatureException{
     	KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("DSA");
@@ -228,7 +228,7 @@ public class Webserver
 	    return signature;
     }
 
-	public static String getmessagePacket1(String VoterID) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	public static String getmessagePacket1(String VoterID, SecretKey SharedKey) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
 	{
 		String packet = "";
 		try
@@ -242,31 +242,42 @@ public class Webserver
 		return packet;
 	}
 
-//	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception
-//	{
-//		cipher = Cipher.getInstance("AES");
-//		byte[] plainTextByte = plainText.getBytes();
-//		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-//		byte[] encryptedByte = cipher.doFinal(plainTextByte);
-//		Base64.Encoder encoder = Base64.getEncoder();
-//		String encryptedText = encoder.encodeToString(encryptedByte);
-//		return encryptedText;
-//	}
-//
-//	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception
-//	{
-//		cipher = Cipher.getInstance("AES");
-//		Base64.Decoder decoder = Base64.getDecoder();
-//		byte[] encryptedTextByte = decoder.decode(encryptedText);
-//		cipher.init(Cipher.DECRYPT_MODE, secretKey);
-//		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
-//		String decryptedText = new String(decryptedByte);
-//		return decryptedText;
-//	}
-	public static SecretKey getSecretKey(){
+	// public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
+	// {
+	// 	cipher = Cipher.getInstance("AES");
+	// 	byte[] plainTextByte = plainText.getBytes();
+	// 	cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+	// 	byte[] encryptedByte = cipher.doFinal(plainTextByte);
+	// 	Base64.Encoder encoder = Base64.getEncoder();
+	// 	String encryptedText = encoder.encodeToString(encryptedByte);
+	// 	return encryptedText;
+	// }
+
+	// public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
+	// {
+	// 	cipher = Cipher.getInstance("AES");
+	// 	Base64.Decoder decoder = Base64.getDecoder();
+	// 	byte[] encryptedTextByte = decoder.decode(encryptedText);
+	// 	cipher.init(Cipher.DECRYPT_MODE, secretKey);
+	// 	byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+	// 	String decryptedText = new String(decryptedByte);
+	// 	return decryptedText;
+	// }
+	public static SecretKey getSecretKey(BigInteger clientKey){
+
+		String key = clientKey.toString();
+		int length = key.length();
+		int i = 0;
 		String keyStr = "012345678901234567890123456789XY";
-		byte[] decodedKey = Base64.getMimeDecoder().decode(keyStr);
+		for(i= length; i < keyStr.length();i++)
+		{
+			char x = keyStr.charAt(i);
+			key = key + String.valueOf(x);
+		}
+		
+		byte[] decodedKey = Base64.getMimeDecoder().decode(key);
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+		System.out.println(secretKey);
 		return secretKey;
 	} 
 
