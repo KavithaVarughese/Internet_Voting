@@ -2,30 +2,26 @@ import java.util.Random;
 import java.net.*; 
 import java.io.*; 
 import java.lang.*;
-import java.util.*;
-import java.math.*;
 public class DHServer { 
 
 
-
-public static BigInteger binary_exponentiation(BigInteger a,BigInteger b,BigInteger p)
+public static Integer binary_exponentiation(Integer a,Integer b,Integer p)
 {
-	BigInteger res = new BigInteger("1");
-	BigInteger zero = new BigInteger("0");
-	BigInteger two = new BigInteger("2");
-	while(b.compareTo(zero) > 0)
+	Integer res = 1;
+	while(b > 0)
 	{
-		if((b.mod(two)).compareTo(res) == 0)
+		if(b%2 == 1)
 		{
-			res = (res.multiply(a)).mod(p);
+			res = (res * a)%p;
 		}
-		a = (a.multiply(a)).mod(p);
-		b = b.divide(two);
+		a = (a*a)%p;
+		b = b/2;
 	}
 	return res;
 }
 
-    private static BigInteger getServerKey(DataInputStream in,DataOutputStream out) throws IOException 
+
+    private static Integer getServerKey(DataInputStream in,DataOutputStream out) throws IOException 
     { 
         try { 
             //int port = 5056; 
@@ -33,7 +29,7 @@ public static BigInteger binary_exponentiation(BigInteger a,BigInteger b,BigInte
            
   
             // Client p, g, and key 
-            BigInteger clientP, clientG, clientA, B, b, Bdash; 
+            Integer clientP, clientG, clientA, B, Bdash; 
             String Bstr; 
   
            
@@ -43,33 +39,27 @@ public static BigInteger binary_exponentiation(BigInteger a,BigInteger b,BigInte
             // Accepts the data from client 
             //DataInputStream in = new DataInputStream(server.getInputStream()); 
   
-            clientP = new BigInteger(in.readUTF()); // to accept p 
+            clientP = Integer.parseInt(in.readUTF()); // to accept p 
             //System.out.println("From Client : P = " + clientP); 
   
-            clientG = new BigInteger(in.readUTF()); // to accept g 
+            clientG = Integer.parseInt(in.readUTF()); // to accept g 
             //System.out.println("From Client : G = " + clientG); 
   
-            clientA = new BigInteger(in.readUTF()); // to accept A 
+            clientA = Integer.parseInt(in.readUTF()); // to accept A 
             //System.out.println("From Client : Public Key = " + clientA); 
 		
-	  
+	   //int p1 = (int)clientP;
 	    Random rand = new Random();
-	    b = new BigInteger(33, rand);
-            BigInteger range = clientP.subtract(BigInteger.valueOf(1));
-	    if (b.compareTo(range) >= 0)
-		b = b.mod(range).add(BigInteger.valueOf(1));
+	    Integer b = rand.nextInt(clientP);
   	    //System.out.println("From Server : Private Key = " + b); 
-
-
-
-            B = (binary_exponentiation(clientG,b,clientP)).mod(clientP); // calculation of B 
-            Bstr = B.toString(); 
+            B = (binary_exponentiation(clientG,b,clientP)) % clientP; // calculation of B 
+            Bstr = Integer.toString(B); 
   	
           
   
             out.writeUTF(Bstr); // Sending B 
   
-            Bdash = (binary_exponentiation(clientA,b,clientP)).mod(clientP); // calculation of Bdash 
+            Bdash = (binary_exponentiation(clientA,b,clientP)) % clientP; // calculation of Bdash 
   
             //System.out.println("Secret Key to perform Symmetric Encryption = "
                               // + Bdash); 
@@ -81,17 +71,17 @@ public static BigInteger binary_exponentiation(BigInteger a,BigInteger b,BigInte
         catch (Exception e) { 
 	e.printStackTrace();
         } 
-return BigInteger.valueOf(-1);
+return -1;
     } 
-public static BigInteger fetchServerKey(DataInputStream in,DataOutputStream out)
+public static Integer fetchServerKey(DataInputStream in,DataOutputStream out)
 {
 	try{
-	BigInteger r  = getServerKey(in,out);
+	Integer r  = getServerKey(in,out);
 	return r;}
 	 catch (Exception e) { 
             e.printStackTrace(); 
         } 
-return BigInteger.valueOf(-1);
+return -1;
 }
 } 
 
