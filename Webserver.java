@@ -22,8 +22,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 // Client class 
 public class Webserver
-{ 	
-
+{
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
 	private static long N1 = 5497326541L;
 	
@@ -34,6 +33,7 @@ public class Webserver
 
 	public static void main(String[] args) throws IOException 
 	{ BigInteger clientKey =  new BigInteger("1");
+
 		try
 		{ 
 			
@@ -118,10 +118,11 @@ public class Webserver
 				
 				// recieving packet 2
 				String received = dis.readUTF(); 
-				
+				System.out.println("\n----------------------------Received Packet2------------------------------");
+
 				//SecretKey SharedKey = getSecretKey(clientKey);
 				//decrypts the packet 2
-				String packet2 = decryptAES(received, SharedKey);
+				String packet2 = EncryptionDecryptionAES.decrypt(received, SharedKey);
 				String[] msgList = packet2.split("\\s+");
 				String UID = msgList[0];
 				long N1_mod = Long.parseLong(msgList[1]);
@@ -159,14 +160,17 @@ public class Webserver
 
 	//External Functions .....
 
-	public static String getmessagePacket3(String CID, String secret, String UID, long N2,  SecretKey SharedKey) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
+	public static String getmessagePacket3(String CID, String secret, String UID, long N2, SecretKey SharedKey) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException
 	{													//mod fn header here if changing the key
 		String Msg = "";
+		String Msgpart = "";
 		try{
 			Msg = CID + " " + secret;
-			Msg = Base64.getEncoder().encodeToString(encryptRSA(Msg, publicKey)) + " " + UID;
+			Msgpart = Base64.getEncoder().encodeToString(rsa.encrypt(Msg, publicKey));
+			Msg =  Msgpart+ " " + UID;
+//			System.out.println("\ncid and secret encrypted is "+ Msgpart);
 			N2 = N2 - 1;
-			Msg = encryptAES(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Long.toString(N2), SharedKey);
+			Msg = EncryptionDecryptionAES.encrypt(Msg + " " + Base64.getEncoder().encodeToString(digSignatureRSA(Msg)) + " " + Long.toString(N2), SharedKey);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -190,11 +194,11 @@ public class Webserver
         return publicKey;
     }
 
-	public static byte[] encryptRSA(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyRSA(publicKey));
-        return cipher.doFinal(data.getBytes());
-    }
+	// public static byte[] encryptRSA(String data, String publicKey) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
+    //     Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+    //     cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyRSA(publicKey));
+    //     return cipher.doFinal(data.getBytes());
+    // }
 
     public static byte[] digSignatureRSA(String Msg) throws BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, SignatureException{
     	KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("DSA");
@@ -230,7 +234,7 @@ public class Webserver
 		try
 		{
 			String msg = "I_want_to_vote";
-			packet = encryptAES(msg + " " + VoterID + " " + Long.toString(N1), SharedKey);
+			packet = EncryptionDecryptionAES.encrypt(msg + " " + VoterID + " " + Long.toString(N1), SharedKey);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -238,27 +242,27 @@ public class Webserver
 		return packet;
 	}
 
-	public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
-	{
-		cipher = Cipher.getInstance("AES");
-		byte[] plainTextByte = plainText.getBytes();
-		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-		byte[] encryptedByte = cipher.doFinal(plainTextByte);
-		Base64.Encoder encoder = Base64.getEncoder();
-		String encryptedText = encoder.encodeToString(encryptedByte);
-		return encryptedText;
-	}
+	// public static String encryptAES(String plainText, SecretKey secretKey) throws Exception 
+	// {
+	// 	cipher = Cipher.getInstance("AES");
+	// 	byte[] plainTextByte = plainText.getBytes();
+	// 	cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+	// 	byte[] encryptedByte = cipher.doFinal(plainTextByte);
+	// 	Base64.Encoder encoder = Base64.getEncoder();
+	// 	String encryptedText = encoder.encodeToString(encryptedByte);
+	// 	return encryptedText;
+	// }
 
-	public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
-	{
-		cipher = Cipher.getInstance("AES");
-		Base64.Decoder decoder = Base64.getDecoder();
-		byte[] encryptedTextByte = decoder.decode(encryptedText);
-		cipher.init(Cipher.DECRYPT_MODE, secretKey);
-		byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
-		String decryptedText = new String(decryptedByte);
-		return decryptedText;
-	}
+	// public static String decryptAES(String encryptedText, SecretKey secretKey) throws Exception 
+	// {
+	// 	cipher = Cipher.getInstance("AES");
+	// 	Base64.Decoder decoder = Base64.getDecoder();
+	// 	byte[] encryptedTextByte = decoder.decode(encryptedText);
+	// 	cipher.init(Cipher.DECRYPT_MODE, secretKey);
+	// 	byte[] decryptedByte = cipher.doFinal(encryptedTextByte);
+	// 	String decryptedText = new String(decryptedByte);
+	// 	return decryptedText;
+	// }
 	public static SecretKey getSecretKey(BigInteger clientKey){
 
 		String key = clientKey.toString();
