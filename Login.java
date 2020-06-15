@@ -16,14 +16,19 @@ import java.util.regex.Pattern;
 import java.net.*; 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import javax.swing.*;
+import java.awt.*;
+
 public class Login
 {
-	
+	public static int count = 0;
 
    public static String authenticate(DataInputStream dis,DataOutputStream dos) {   
    
     	Console cnsl = null;
-    	String name = null;
+		String name = null;
+		
+		
       
       	try {
         
@@ -36,13 +41,14 @@ public class Login
 				{
 			
 					i=i-1;
-		    
-		    		//enter name
-		    		name = cnsl.readLine("Enter VoterId:\n"); // read line from the user input
-			
-					//enter password
-					System.out.println("Enter password:");
-					char[] pwd = cnsl.readPassword(); // read password into the char array
+
+					MyFrame1 Frame1 = new MyFrame1(); // Asking username and password GUI
+					Frame1.display();
+					String output = Frame1.getOutput();
+					String[] msgList = output.split("\\s+");
+					name = msgList[0];
+					String pwd = msgList[1];
+
 					final String pass = String.valueOf(pwd);
 			
 					//sending VoterId
@@ -86,10 +92,11 @@ public class Login
 						System.out.println("Please try again");
 					else
 					{
-						System.out.println("Check The registered mail for OTP");
-						System.out.println("Enter the OTP");
-						String otp = cnsl.readLine();
-						//sending server otp;
+						MyFrame2 Frame2 = new MyFrame2(); // Asking username and password
+						Frame2.display();
+						output = Frame2.getOutput();
+						String otp = output;
+
 						dos.writeUTF(otp);
 		                String result = dis.readUTF();
 						if(result.equals("accepted"))

@@ -20,6 +20,8 @@ import java.math.*;
 import java.util.Scanner; 
 import javax.crypto.spec.SecretKeySpec;
 import java.net.SocketTimeoutException;
+import javax.swing.*;
+import java.awt.*;
 
 // Client class 
 public class Webserver
@@ -63,8 +65,9 @@ public class Webserver
 				//Diffie Hellman Exchange
 				if(res.equals("rejected"))
 				{	
-					System.out.println("Please contact the Election Authority");
-					break;
+					MyFrame4 Frame4 = new MyFrame4("You have already voted. Contact Election Commissioner for cross checking."); // Frame displaying secret
+					Frame4.display();
+					break; 
 					
 				}
 				else
@@ -94,19 +97,20 @@ public class Webserver
 				HashMap<String, String> CandidateTable = (HashMap) mapdis.readObject();
 
 				//Print Candidates
-				printMenu(CandidateTable);
+				// printMenu(CandidateTable);
+				
 
 				//casting the vote
-				System.out.println("Enter Name of Candidate you wish to vote for . Must be exactly as mentioned in the list.");
 				String CID;
 				do{
-					String Vote = scn.nextLine();
+
+					MyFrame3 Frame3 = new MyFrame3(CandidateTable); // GUI displaying candidate list
+					Frame3.display();
+					String Vote = Frame3.getOutput();
+
 					if(CandidateTable.containsKey(Vote)){
 						CID = CandidateTable.get(Vote);
 						break;
-					}
-					else{
-						System.out.println("Please mention the candidate name exactly as mentioned in the list.");
 					}
 				}while(true);
 				
@@ -125,9 +129,9 @@ public class Webserver
 
 				//Check if nonce 1 is correct
 				if ((N1_mod != N1-1)){
-					System.out.println("Voter already voted");
-					System.out.println("Refusing this connection.");
-					System.out.println("Connection closed"); 
+
+					MyFrame4 Frame4 = new MyFrame4("Nonce Wrong. Fake packet. Connection closed. "); // Frame displaying secret
+					Frame4.display();
 					break; 
 				}
 				
@@ -159,6 +163,9 @@ public class Webserver
 				}while(true);
 
 				s.setSoTimeout(0);
+
+				MyFrame4 Frame4 = new MyFrame4("The secret key is : " + secret); // Frame displaying secret
+				Frame4.display();
 				
 				break;
 				
@@ -262,12 +269,5 @@ public class Webserver
 		return secretKey;
 	} 
 
-	public static void printMenu(HashMap<String,String> CandidateTable){
-		int i = 1;
-		for (String item: CandidateTable.keySet()) {
-			System.out.println( Integer.toString(i) + " : " + item);
-			i++;
-		}
-	}
 } 
 
