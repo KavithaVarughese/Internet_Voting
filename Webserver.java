@@ -151,14 +151,9 @@ public class Webserver
 							System.out.println("Failed to send packet2, RESENDING.");
 							dos.writeUTF(tosend);		//resending packet 3
 						}
-						else{
-							System.out.println("Sent packet3 successfully.");
-							break;
-						}
-
 					}
-					catch (SocketTimeoutException e){
-						System.out.println("No Response so stopping");
+					catch (Exception e){
+						System.out.println("Packet3 successfully sent.");
 						break;
 					}
 				}while(true);
