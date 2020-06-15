@@ -19,6 +19,7 @@ import java.net.*;
 import java.math.*;
 import java.util.Scanner; 
 import javax.crypto.spec.SecretKeySpec;
+import java.net.SocketTimeoutException;
 
 // Client class 
 public class Webserver
@@ -111,6 +112,7 @@ public class Webserver
 				
 				// recieving packet 2
 				String received = dis.readUTF(); 
+				String packet2_temp = received;
 				System.out.println("\n----------------------------Received Packet2------------------------------");
 
 				//decrypts the packet 2
@@ -136,9 +138,32 @@ public class Webserver
 				String tosend = getmessagePacket3(CID, secret, UID, N2, SharedKey);
 				dos.writeUTF(tosend);
 
-				try{
-					//writing code
-				}
+				//polling for response
+				s.setSoTimeout(5000);	//polling for 5 secs for response
+
+				String testStr = "Initial";
+
+				do{
+
+					try{
+						testStr = dis.readUTF();
+						if (testStr == packet2_temp){
+							System.out.println("Failed to send packet2, RESENDING.");
+							dos.writeUTF(tosend);		//resending packet 3
+						}
+						else{
+							System.out.println("Sent packet3 successfully.");
+							break;
+						}
+
+					}
+					catch (SocketTimeoutException e){
+						System.out.println("No Response so stopping");
+						break;
+					}
+				}while(true);
+
+				s.setSoTimeout(0);
 				
 				break;
 				

@@ -270,6 +270,8 @@ class VoterHandler extends Thread{
 				// PACKET 3
 				received = "Initial";
 				// receive packet 3
+
+				//polling for the packet
 				s.setSoTimeout(5000);
 
 				do{
@@ -284,6 +286,7 @@ class VoterHandler extends Thread{
 						e.printStackTrace();
 					}
 				}while(received == "Initial");
+				s.setSoTimeout(0);
 
 				System.out.println("\n----------------------------Receive Packet3-------------------------------");
 
