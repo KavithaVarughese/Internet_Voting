@@ -12,6 +12,7 @@ public class VoterData{
    VoterTable.put("B160779CS", new VoterInfo("B160779CS", "kavitha_pwd", "kavithavarughese@gmail.com", "d21jkahfds"));
    VoterTable.put("B160382CS", new VoterInfo("B160382CS", "varshini_pwd", "varshininaikk1998@gmail.com", "a365zqr301"));
    VoterTable.put("b160262cs", new VoterInfo("b160262cs", "pass", "fatimabasheer1234567@gmail.com", "a365uqr301"));
+   VoterTable.put("b160008cs", new VoterInfo("b160008cs", "pass", "mathewg98@gmail.com", "a365uqr301"));
    }
 
    public HashMap<String, VoterInfo> getVoterTable()
