@@ -27,7 +27,7 @@ import java.awt.*;
 public class Webserver
 {
 	private static String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgFGVfrY4jQSoZQWWygZ83roKXWD4YeT2x2p41dGkPixe73rT2IW04glagN2vgoZoHuOPqa5and6kAmK2ujmCHu6D1auJhE2tXP+yLkpSiYMQucDKmCsWMnW9XlC5K7OSL77TXXcfvTvyZcjObEz6LIBRzs6+FqpFbUO9SJEfh6wIDAQAB";
-	private static long N1 = 5497326541L;
+	private static long N1 = Long.parseLong(nonceGenerator());
 	
 	//Necessities for AES Encryption
 	static Cipher cipher;
@@ -267,7 +267,17 @@ public class Webserver
 		byte[] decodedKey = Base64.getMimeDecoder().decode(key);
 		SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
 		return secretKey;
-	} 
+	}
+
+	public static String nonceGenerator(){ 
+		SecureRandom secureRandom = new SecureRandom(); 
+		StringBuilder stringBuilder = new StringBuilder(); 
+		for (int i = 0; i < 15; i++){ 
+			stringBuilder.append(secureRandom.nextInt(10)); 
+		} 
+		String randomNumber = stringBuilder.toString();
+		return randomNumber; 
+		}
 
 } 
 

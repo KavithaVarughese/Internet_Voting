@@ -29,12 +29,12 @@ import java.security.SignatureException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.net.SocketTimeoutException;
+import java.security.SecureRandom; 
 
 
 // S1 class 
 public class S1
 { 
-	private long N3 = 3724116239L;
 	//accessing voter table in the form of Hashmap and classes
 	static VoterData temp1 = new VoterData();
 	public static HashMap<String, VoterInfo> VoterTable = temp1.getVoterTable();
@@ -99,7 +99,8 @@ class VoterHandler extends Thread{
 	static Cipher cipher;
 
 	//Nonces
-	private long N2 = 3725678901L;
+	private long N2 = Long.parseLong(nonceGenerator());
+	private long N3 = Long.parseLong(nonceGenerator());
 
 	// Constructor 
 	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos){ 
@@ -345,7 +346,6 @@ class VoterHandler extends Thread{
 				//set up communication with S2 in this block
 				//send request to S2
 
-				long N3 = 34555;
 				String toSendtoS2 = EncryptionDecryptionAES.encrypt(vote+" "+Long.toString(N3),S1.getSecretKeyS2());
 				dos_S2.writeUTF(toSendtoS2);
 				System.out.println("\n---------------------Sent Packet4---------------------");
@@ -443,5 +443,15 @@ class VoterHandler extends Thread{
 		}
 		return packet;
 	}
+
+	public static String nonceGenerator(){ 
+		SecureRandom secureRandom = new SecureRandom(); 
+		StringBuilder stringBuilder = new StringBuilder(); 
+		for (int i = 0; i < 15; i++) { 
+		stringBuilder.append(secureRandom.nextInt(10)); 
+		} 
+		String randomNumber = stringBuilder.toString();
+		 return randomNumber; 
+		}
 } 
 
