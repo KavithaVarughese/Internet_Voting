@@ -19,6 +19,8 @@ import java.net.*;
 import java.math.*;
 import java.util.Scanner; 
 import javax.crypto.spec.SecretKeySpec;
+import javax.swing.*;
+import java.awt.*;
 
 // Client class 
 public class Webserver
@@ -93,19 +95,21 @@ public class Webserver
 				HashMap<String, String> CandidateTable = (HashMap) mapdis.readObject();
 
 				//Print Candidates
-				printMenu(CandidateTable);
+				// printMenu(CandidateTable);
+				
 
 				//casting the vote
 				System.out.println("Enter Name of Candidate you wish to vote for . Must be exactly as mentioned in the list.");
 				String CID;
 				do{
-					String Vote = scn.nextLine();
+
+					MyFrame3 Frame3 = new MyFrame3(CandidateTable); // Asking username and password
+					Frame3.display();
+					String Vote = Frame3.getOutput();
+
 					if(CandidateTable.containsKey(Vote)){
 						CID = CandidateTable.get(Vote);
 						break;
-					}
-					else{
-						System.out.println("Please mention the candidate name exactly as mentioned in the list.");
 					}
 				}while(true);
 				
@@ -135,6 +139,9 @@ public class Webserver
 				System.out.println("----------------------------Sending Packet3----------------------------------------");
 				String tosend = getmessagePacket3(CID, secret, UID, N2, SharedKey);
 				dos.writeUTF(tosend);
+
+				MyFrame4 Frame4 = new MyFrame4(secret); // Asking username and password
+				Frame4.display();
 				
 				break;
 				
@@ -238,12 +245,5 @@ public class Webserver
 		return secretKey;
 	} 
 
-	public static void printMenu(HashMap<String,String> CandidateTable){
-		int i = 1;
-		for (String item: CandidateTable.keySet()) {
-			System.out.println( Integer.toString(i) + " : " + item);
-			i++;
-		}
-	}
 } 
 
