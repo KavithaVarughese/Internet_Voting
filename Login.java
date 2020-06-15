@@ -41,15 +41,8 @@ public class Login
 				{
 			
 					i=i-1;
-		    
-		    		//enter name
-		    		// name = cnsl.readLine("Enter VoterId:\n"); // read line from the user input
-			
-					// //enter password
-					// System.out.println("Enter password:");
-					// char[] pwd = cnsl.readPassword(); // read password into the char array
 
-					MyFrame1 Frame1 = new MyFrame1(); // Asking username and password
+					MyFrame1 Frame1 = new MyFrame1(); // Asking username and password GUI
 					Frame1.display();
 					String output = Frame1.getOutput();
 					String[] msgList = output.split("\\s+");

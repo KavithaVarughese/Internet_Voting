@@ -64,8 +64,9 @@ public class Webserver
 				//Diffie Hellman Exchange
 				if(res.equals("rejected"))
 				{	
-					System.out.println("Please contact the Election Authority");
-					break;
+					MyFrame4 Frame4 = new MyFrame4("You have already voted. Contact Election Commissioner for cross checking."); // Frame displaying secret
+					Frame4.display();
+					break; 
 					
 				}
 				else
@@ -99,11 +100,10 @@ public class Webserver
 				
 
 				//casting the vote
-				System.out.println("Enter Name of Candidate you wish to vote for . Must be exactly as mentioned in the list.");
 				String CID;
 				do{
 
-					MyFrame3 Frame3 = new MyFrame3(CandidateTable); // Asking username and password
+					MyFrame3 Frame3 = new MyFrame3(CandidateTable); // GUI displaying candidate list
 					Frame3.display();
 					String Vote = Frame3.getOutput();
 
@@ -127,9 +127,9 @@ public class Webserver
 
 				//Check if nonce 1 is correct
 				if ((N1_mod != N1-1)){
-					System.out.println("Voter already voted");
-					System.out.println("Refusing this connection.");
-					System.out.println("Connection closed"); 
+
+					MyFrame4 Frame4 = new MyFrame4("Nonce Wrong. Fake packet. Connection closed. "); // Frame displaying secret
+					Frame4.display();
 					break; 
 				}
 				
@@ -140,7 +140,7 @@ public class Webserver
 				String tosend = getmessagePacket3(CID, secret, UID, N2, SharedKey);
 				dos.writeUTF(tosend);
 
-				MyFrame4 Frame4 = new MyFrame4(secret); // Asking username and password
+				MyFrame4 Frame4 = new MyFrame4("The secret key is : " + secret); // Frame displaying secret
 				Frame4.display();
 				
 				break;
