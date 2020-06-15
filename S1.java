@@ -28,6 +28,7 @@ import javax.crypto.SecretKey;
 import java.security.SignatureException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.net.SocketTimeoutException;
 
 
 // S1 class 
@@ -267,9 +268,23 @@ class VoterHandler extends Thread{
 				dos.writeUTF(packet2);
 
 				// PACKET 3
-				
+				received = "Initial";
 				// receive packet 3
-				received = dis.readUTF(); 
+				s.setSoTimeout(5000);
+
+				do{
+					try{
+						received = dis.readUTF(); 
+					}
+					catch (SocketTimeoutException e){
+						System.out.println("Packet3 not Recieved... Sending Packet 2 again.");
+						dos.writeUTF(packet2);
+					}
+					catch (Exception e){
+						e.printStackTrace();
+					}
+				}while(received == "Initial");
+
 				System.out.println("\n----------------------------Receive Packet3-------------------------------");
 
 				//decrypting packet 3

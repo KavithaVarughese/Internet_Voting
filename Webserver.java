@@ -135,6 +135,10 @@ public class Webserver
 				System.out.println("----------------------------Sending Packet3----------------------------------------");
 				String tosend = getmessagePacket3(CID, secret, UID, N2, SharedKey);
 				dos.writeUTF(tosend);
+
+				try{
+					//writing code
+				}
 				
 				break;
 				
