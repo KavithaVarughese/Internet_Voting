@@ -20,3 +20,20 @@
 
 
 S2 -> S1 -> Webserver //order to run the files
+
+
+//Installing Apache Server and hosting
+1. sudo apt-get update
+2. sudo apt upgrade
+3. sudo apt-get install apache2
+4. sudo service apache2 restart
+5. sudo gpasswd -a "$USER" www-data
+6. sudo chown -R "$USER":www-data /var/www
+7. Repeat Step 4
+8. sudo ufw app list
+9. sudo ufw allow in "Apache Full" (or)   sudo ufw allow in "Apache"
+10. Place the index.html and secrets.txt within /var/www/html/
+11. Change the link in "publish" of S2
+\\\More to be seen on how to make the website accessible to other clients
+
+
