@@ -180,7 +180,7 @@ class VoterHandler extends Thread{
 
 				try{
 					KeySpec spec = new PBEKeySpec(pass.toCharArray(),salt,65536, 128);
-					SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+					SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
 					byte hash[] = f.generateSecret(spec).getEncoded();
 				
 					hp = enc.encodeToString(hash);
