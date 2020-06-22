@@ -101,7 +101,7 @@ class VoterHandler extends Thread{
 	//Nonces
 	private long N2 = Long.parseLong(nonceGenerator());
 	private long N3 = Long.parseLong(nonceGenerator());
-
+	static long N22,N33;
 	// Constructor 
 	public VoterHandler(Socket s, DataInputStream dis, DataOutputStream dos){ 
 		this.s = s; 
@@ -130,6 +130,7 @@ class VoterHandler extends Thread{
 			
 			//LOGIN STARTS -- We have to assume that an already existing salt is there on both sides
 			//Functions for salt functionality
+			
 			SecureRandom random = new SecureRandom();
 			Base64.Encoder enc = Base64.getEncoder();
 
@@ -265,7 +266,8 @@ class VoterHandler extends Thread{
 				
 				//Semding packet 2 
 				System.out.println("----------------------------Sending Packet2----------------------------------------");
-				String packet2 = getmessagePacket2(S1.VoterTable.get(VoterId).getUniqueId(), N1, SharedKey);
+				N22 = N2;
+				String packet2 = getmessagePacket2(S1.VoterTable.get(VoterId).getUniqueId(), N1, SharedKey,N22);
 				dos.writeUTF(packet2);
 
 				// PACKET 3
@@ -296,6 +298,9 @@ class VoterHandler extends Thread{
 				msgList = Msg.split("\\s+");			//splits to a list of rsa encrypted packet, uid, dig sig and N2-1
 				String UID = msgList[1];
 				Long N2_mod = Long.parseLong(msgList[3]);
+				System.out.println(S1.VoterCheckTable.size());
+				System.out.println(N2_mod);
+				System.out.println(N22-1);
 				//Check if nonce is correct
 				//getVoteCasted returns boolean for whether the corresponding UID has casted vote or not
 				//So if it returns true.. then socket should close
@@ -345,15 +350,15 @@ class VoterHandler extends Thread{
 				DataOutputStream dos_S2 = new DataOutputStream(s_S2.getOutputStream());
 				//set up communication with S2 in this block
 				//send request to S2
-
-				String toSendtoS2 = EncryptionDecryptionAES.encrypt(vote+" "+Long.toString(N3),S1.getSecretKeyS2());
+				N33 = N3;
+				String toSendtoS2 = EncryptionDecryptionAES.encrypt(vote+" "+Long.toString(N33),S1.getSecretKeyS2());
 				dos_S2.writeUTF(toSendtoS2);
 				System.out.println("\n---------------------Sent Packet4---------------------");
 
 				//recieve response
 				received = dis_S2.readUTF();
 
-				if(Long.parseLong(received)+1 == N3){
+				if(Long.parseLong(received)+1 == N33){
 					System.out.println("\n---------------------Received Packet5---------------------");
 					
 				}else{
@@ -431,13 +436,13 @@ class VoterHandler extends Thread{
 		return secretKey;
 	}
 
-	public static String getmessagePacket2(String uniqueID, long N1, SecretKey SharedKey) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException{
+	public static String getmessagePacket2(String uniqueID, long N1, SecretKey SharedKey,long N22) throws SignatureException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException{
 	
 		long N2 = 3725678901L;
 		String packet = "";
 		String secret = getAlphaNumericString(10);
 		try{
-			packet = encryptAES(uniqueID + " " + Long.toString(N1-1) + " " + Long.toString(N2) + " " + secret , SharedKey);
+			packet = encryptAES(uniqueID + " " + Long.toString(N1-1) + " " + Long.toString(N22) + " " + secret , SharedKey);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
